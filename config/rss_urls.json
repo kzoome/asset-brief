@@ -1,0 +1,38 @@
+{
+  "MK": {
+    "name": "매일경제",
+    "rss": {
+      "economy": "https://www.mk.co.kr/rss/30100041/",
+      "politics": "https://www.mk.co.kr/rss/30200030/",
+      "society": "https://www.mk.co.kr/rss/50300009/",
+      "tech": "https://www.mk.co.kr/rss/50300011/"
+    }
+  },
+  "HK": {
+    "name": "한국경제",
+    "rss": {
+      "economy": "https://www.hankyung.com/feed/economy",
+      "politics": "https://www.hankyung.com/feed/politics",
+      "society": "https://www.hankyung.com/feed/society",
+      "tech": "https://www.hankyung.com/feed/it"
+    }
+  },
+  "Joongang": {
+    "name": "중앙일보",
+    "rss": {
+      "economy": "https://rss.joongang.co.kr/joins/money/list.xml",
+      "politics": "https://rss.joongang.co.kr/joins/politics/list.xml",
+      "society": "https://rss.joongang.co.kr/joins/society/list.xml",
+      "tech": "https://rss.joongang.co.kr/joins/it/list.xml"
+    }
+  },
+  "Hani": {
+    "name": "한겨레",
+    "rss": {
+      "economy": "https://www.hani.co.kr/rss/economy/",
+      "politics": "https://www.hani.co.kr/rss/politics/",
+      "society": "https://www.hani.co.kr/rss/society/",
+      "tech": "https://www.hani.co.kr/rss/science/"
+    }
+  }
+}
