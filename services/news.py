@@ -73,15 +73,25 @@ def _get_yfinance_news(ticker: str, max_items: int = 5) -> str:
         news_text = ""
         count = 0
         for item in news_items:
-            title = item.get("title", "")
-            publisher = item.get("publisher", "")
-            # yfinance 뉴스 링크 추출
+            # yfinance 최신 API 구조 (item['content'] 내부에 데이터 존재) 및 구형 구조 모두 대응
+            content_dict = item.get("content", item) if isinstance(item.get("content"), dict) else item
+            
+            title = content_dict.get("title", item.get("title", ""))
+            
+            provider = content_dict.get("provider", {})
+            if not isinstance(provider, dict):
+                provider = {}
+            publisher = provider.get("displayName", item.get("publisher", ""))
+            
             link = ""
-            content = item.get("content", {})
-            if isinstance(content, dict):
-                link = content.get("clickThroughUrl", {}).get("url", "")
+            click_through = content_dict.get("clickThroughUrl", {})
+            if isinstance(click_through, dict):
+                link = click_through.get("url", "")
+            if not link:
+                link = content_dict.get("canonicalUrl", {}).get("url", "") if isinstance(content_dict.get("canonicalUrl"), dict) else ""
             if not link:
                 link = item.get("link", "")
+                
             if not title:
                 continue
             news_text += f"\n--- [Yahoo Finance] 기사 {count+1} ---\n"
