@@ -220,6 +220,48 @@ def _search_tavily(query: str, include_domains: list, max_results: int = 3,
         return []
 
 
+def fetch_google_news(query: str, max_results: int = 5, days: int = 1) -> list:
+    """Google News RSS를 통해 기사를 가져옵니다. Tavily 검색 실패 시 대안으로 사용합니다."""
+    import urllib.parse
+    import feedparser
+    import ssl
+    
+    enc_query = urllib.parse.quote(query)
+    # 한국어 뉴스 검색
+    url = f"https://news.google.com/rss/search?q={enc_query}&hl=ko&gl=KR&ceid=KR:ko"
+    
+    if hasattr(ssl, '_create_unverified_context'):
+        ssl._create_default_https_context = ssl._create_unverified_context
+        
+    try:
+        feed = feedparser.parse(url)
+        cutoff = datetime.now() - timedelta(days=days + 1)
+        results = []
+        
+        for entry in feed.entries:
+            pub_date_str = entry.get('published', '')
+            if pub_date_str:
+                try:
+                    parsed_dt = datetime(*entry.published_parsed[:6])
+                    if parsed_dt < cutoff:
+                        continue
+                except Exception:
+                    pass
+            
+            # Google RSS는 content 전문이 없으므로 summary(미리보기)를 대신 사용
+            results.append({
+                "title": entry.title,
+                "url": entry.link,
+                "content": entry.get('summary', ''),
+                "published_date": pub_date_str
+            })
+            if len(results) >= max_results:
+                break
+        return results
+    except Exception as e:
+        print(f"   ⚠️ Google News RSS 수집 실패: {e}")
+        return []
+
 def get_asset_news(ticker: str, name: str) -> str:
     """자산군에 따라 최적화된 방식으로 뉴스를 검색합니다.
 
@@ -259,6 +301,12 @@ def get_asset_news(ticker: str, name: str) -> str:
         query = name_kr          # 한글명만으로 검색
         print(f"   👉 Query(Local): {query}")
         results = _search_tavily(query, TRUSTED_DOMAINS_KR, max_results=3)
+        
+        # Tavily 검색 결과가 없으면 Google News RSS 로 폴백 (국내 주요 뉴스 소식 보완)
+        if not results:
+            print(f"   ⚠️ Tavily 국내 검색 결과 없음. Google News RSS로 대체 수집 🚀")
+            results = fetch_google_news(query, max_results=3, days=1)
+            
         for idx, result in enumerate(results):
             news_text += f"\n--- [Local/Korean] 기사 {idx+1} ---\n"
             news_text += f"제목: {result['title']}\n"

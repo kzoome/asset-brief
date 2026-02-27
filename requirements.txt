@@ -2,4 +2,4 @@ python-dotenv
 tavily-python
 google-genai
 python-telegram-bot
-yfinance
+yfinancefeedparser
