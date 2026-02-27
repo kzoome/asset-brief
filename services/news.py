@@ -118,10 +118,12 @@ def _search_tavily(query: str, include_domains: list, max_results: int = 3,
 
         # 1. score 필터
         filtered = [r for r in results if r.get("score", 0) >= min_score]
-        # 2. 날짜 필터: published_date가 있으면 days 범위 내인지 확인, 없으면 URL에서 추정
+        # 2. 날짜 필터: published_date가 있으면 days 범위 내인지 확인, 없으면 URL에서 추정, 그래도 없으면 HTML 확인
         cutoff = datetime.now() - timedelta(days=days + 1)  # 여유 +1일
         date_filtered = []
         import re
+        import urllib.request
+        
         for r in filtered:
             pub = r.get("published_date", "")
             pub_dt = None
@@ -134,18 +136,51 @@ def _search_tavily(query: str, include_domains: list, max_results: int = 3,
                     pass
             
             # (2) 실패 시 URL에서 날짜 추출 시도 (예: 2026/02/12 또는 20260212)
-            if not pub_dt and r.get("url"):
-                match = re.search(r'(20[12]\d)[-/]?([01]\d)[-/]?([0-3]\d)', r.get("url"))
+            url = r.get("url", "")
+            if not pub_dt and url:
+                match = re.search(r'(20[12]\d)[-/]?([01]\d)[-/]?([0-3]\d)', url)
                 if match:
                     try:
                         year, month, day = map(int, match.groups())
                         pub_dt = datetime(year, month, day)
                     except ValueError:
                         pass
+                        
+            # (3) 그래도 실패 시 HTML 콘텐츠 일부를 다운로드하여 날짜 패턴 탐색
+            if not pub_dt and url:
+                try:
+                    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req, timeout=3) as response:
+                        html = response.read(20000).decode('utf-8', errors='ignore') # 앞부분 20KB만 확인
+                        
+                        # meta 태그 등에서 날짜 추출 우선 시도
+                        meta_match = re.search(r'<meta[^>]*property=["\']article:published_time["\'][^>]*content=["\']([^"\']+)["\']', html)
+                        if meta_match:
+                            try:
+                                pub_dt = datetime.fromisoformat(meta_match.group(1).replace("Z", "+00:00")).replace(tzinfo=None)
+                            except ValueError:
+                                pass
+                        
+                        # meta 실패 시 HTML 텍스트에서 일반적인 YYYY-MM-DD 또는 YYYY.MM.DD 패턴 탐색
+                        if not pub_dt:
+                            date_match = re.search(r'(20[12]\d)[-/.]([01]\d)[-/.]([0-3]\d)', html)
+                            if date_match:
+                                try:
+                                    y, m, d = map(int, date_match.groups())
+                                    pub_dt = datetime(y, m, d)
+                                except ValueError:
+                                    pass
+                except Exception as e:
+                    print(f"   ⚠️ HTML 날짜 추출 실패 ({url}): {e}")
             
-            # (3) 날짜가 존재하고 cutoff 이전이면 제외
-            if pub_dt and pub_dt < cutoff:
-                print(f"   🗓️ 오래된 기사 제외: {r.get('title', '')[:40]}... ({pub_dt.strftime('%Y-%m-%d')})")
+            # (4) 날짜가 존재하고 cutoff 이전이면 제외
+            if pub_dt:
+                if pub_dt < cutoff:
+                    print(f"   🗓️ 오래된 기사 제외: {r.get('title', '')[:40]}... ({pub_dt.strftime('%Y-%m-%d')})")
+                    continue
+            else:
+                # 끝까지 날짜를 모르는 경우 제외 (오래된 기사 노출 방지 위함)
+                print(f"   🗓️ 날짜 미상 기사 제외: {r.get('title', '')[:40]}...")
                 continue
             
             date_filtered.append(r)
