@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timedelta
 import yfinance as yf
 from tavily import TavilyClient
 from utils.market import get_asset_type, get_ticker_name_kr
@@ -117,12 +118,27 @@ def _search_tavily(query: str, include_domains: list, max_results: int = 3,
 
         # 1. score 필터
         filtered = [r for r in results if r.get("score", 0) >= min_score]
-        # 2. 시세 페이지 제목 필터
+        # 2. 날짜 필터: published_date가 있으면 days 범위 내인지 확인
+        cutoff = datetime.now() - timedelta(days=days + 1)  # 여유 +1일
+        date_filtered = []
+        for r in filtered:
+            pub = r.get("published_date", "")
+            if pub:
+                try:
+                    pub_dt = datetime.fromisoformat(pub.replace("Z", "+00:00")).replace(tzinfo=None)
+                    if pub_dt < cutoff:
+                        print(f"   🗓️ 오래된 기사 제외: {r.get('title', '')[:40]}... ({pub[:10]})")
+                        continue
+                except (ValueError, TypeError):
+                    pass  # 파싱 실패 시 통과
+            date_filtered.append(r)
+        filtered = date_filtered
+        # 3. 시세 페이지 제목 필터
         filtered = [
             r for r in filtered
             if not any(pat in r.get("title", "") for pat in EXCLUDE_TITLE_PATTERNS)
         ]
-        # 3. 중복 제거
+        # 4. 중복 제거
         seen = set()
         deduped = []
         for r in filtered:
@@ -130,7 +146,7 @@ def _search_tavily(query: str, include_domains: list, max_results: int = 3,
             if title not in seen:
                 seen.add(title)
                 deduped.append(r)
-        # 4. score 내림차순 정렬
+        # 5. score 내림차순 정렬
         deduped.sort(key=lambda r: r.get("score", 0), reverse=True)
 
         dropped = len(results) - len(deduped)
