@@ -118,19 +118,36 @@ def _search_tavily(query: str, include_domains: list, max_results: int = 3,
 
         # 1. score 필터
         filtered = [r for r in results if r.get("score", 0) >= min_score]
-        # 2. 날짜 필터: published_date가 있으면 days 범위 내인지 확인
+        # 2. 날짜 필터: published_date가 있으면 days 범위 내인지 확인, 없으면 URL에서 추정
         cutoff = datetime.now() - timedelta(days=days + 1)  # 여유 +1일
         date_filtered = []
+        import re
         for r in filtered:
             pub = r.get("published_date", "")
+            pub_dt = None
+            
+            # (1) published_date 파싱 시도
             if pub:
                 try:
                     pub_dt = datetime.fromisoformat(pub.replace("Z", "+00:00")).replace(tzinfo=None)
-                    if pub_dt < cutoff:
-                        print(f"   🗓️ 오래된 기사 제외: {r.get('title', '')[:40]}... ({pub[:10]})")
-                        continue
                 except (ValueError, TypeError):
-                    pass  # 파싱 실패 시 통과
+                    pass
+            
+            # (2) 실패 시 URL에서 날짜 추출 시도 (예: 2026/02/12 또는 20260212)
+            if not pub_dt and r.get("url"):
+                match = re.search(r'(20[12]\d)[-/]?([01]\d)[-/]?([0-3]\d)', r.get("url"))
+                if match:
+                    try:
+                        year, month, day = map(int, match.groups())
+                        pub_dt = datetime(year, month, day)
+                    except ValueError:
+                        pass
+            
+            # (3) 날짜가 존재하고 cutoff 이전이면 제외
+            if pub_dt and pub_dt < cutoff:
+                print(f"   🗓️ 오래된 기사 제외: {r.get('title', '')[:40]}... ({pub_dt.strftime('%Y-%m-%d')})")
+                continue
+            
             date_filtered.append(r)
         filtered = date_filtered
         # 3. 시세 페이지 제목 필터
