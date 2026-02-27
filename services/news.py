@@ -47,6 +47,19 @@ EXCLUDE_TITLE_PATTERNS = [
     "stock quote", "stock price",
 ]
 
+# 한국 종목의 글로벌 외신 검색용 영문 키워드 (yfinance shortName + 산업 키워드)
+KR_GLOBAL_QUERY_MAP = {
+    "000660.KS": "SK hynix memory HBM",
+    "003230.KS": "Samyang Foods ramen",
+    "009540.KS": "HD Korea Shipbuilding",
+    "352820.KS": "HYBE K-pop",
+    "138040.KS": "Meritz Financial",
+    "298040.KS": "Hyosung Heavy Industries transformer",
+    "017670.KS": "SK Telecom AI",
+    "005930.KS": "Samsung Electronics semiconductor",
+    "373220.KS": "LG Energy Solution battery",
+}
+
 
 def _get_yfinance_news(ticker: str, max_items: int = 5) -> str:
     """yfinance를 이용해 Yahoo Finance가 큐레이팅한 뉴스를 가져옵니다."""
@@ -61,11 +74,20 @@ def _get_yfinance_news(ticker: str, max_items: int = 5) -> str:
         for item in news_items:
             title = item.get("title", "")
             publisher = item.get("publisher", "")
+            # yfinance 뉴스 링크 추출
+            link = ""
+            content = item.get("content", {})
+            if isinstance(content, dict):
+                link = content.get("clickThroughUrl", {}).get("url", "")
+            if not link:
+                link = item.get("link", "")
             if not title:
                 continue
             news_text += f"\n--- [Yahoo Finance] 기사 {count+1} ---\n"
             news_text += f"Title: {title}\n"
             news_text += f"Source: {publisher}\n"
+            if link:
+                news_text += f"URL: {link}\n"
             count += 1
             if count >= max_items:
                 break
@@ -124,10 +146,10 @@ def get_asset_news(ticker: str, name: str) -> str:
     """자산군에 따라 최적화된 방식으로 뉴스를 검색합니다.
 
     전략:
-    - 공통: yfinance 뉴스 (무료, Yahoo Finance 큐레이팅) — 외신 역할
-    - Tavily: basic 검색(1크레딧/건), 종목당 1회 호출
-      - 미국: 영미권 신뢰 매체
-      - 한국: 국내 경제지 (외신은 yfinance로 대체)
+    - 공통: yfinance 뉴스 (무료, Yahoo Finance 큐레이팅)
+    - Tavily: basic 검색(1크레딧/건)
+      - 미국: 영미권 신뢰 매체, 종목당 1회
+      - 한국: 글로벌 영문 매체(외신) + 국내 경제지, 종목당 2회
     """
     asset_type = get_asset_type(ticker)
     print(f"🔍 [{ticker}] 뉴스 검색 중... (Type: {asset_type})")
@@ -139,8 +161,22 @@ def get_asset_news(ticker: str, name: str) -> str:
     if yf_news:
         news_text += yf_news
 
-    # ── Tavily: 종목당 1회만 호출 ──
+    # ── Tavily 검색 ──
     if asset_type == "KR_STOCK":
+        # 1) 글로벌 외신: 최적화된 영문 키워드로 영미권 매체 검색
+        #    (신뢰 도메인 한정이므로 min_score를 낮춰도 노이즈가 적음)
+        query_global = KR_GLOBAL_QUERY_MAP.get(ticker, name)
+        print(f"   👉 Query(Global): {query_global}")
+        results_global = _search_tavily(query_global, TRUSTED_DOMAINS_US,
+                                        max_results=3, min_score=0.03)
+        for idx, result in enumerate(results_global):
+            news_text += f"\n--- [Global/English] 기사 {idx+1} ---\n"
+            news_text += f"Title: {result['title']}\n"
+            news_text += f"Content: {result['content']}\n"
+            if result.get('url'):
+                news_text += f"URL: {result['url']}\n"
+
+        # 2) 국내 뉴스: 한글명으로 국내 경제지 검색
         name_kr = get_ticker_name_kr(ticker)
         query = name_kr          # 한글명만으로 검색
         print(f"   👉 Query(Local): {query}")
@@ -149,6 +185,8 @@ def get_asset_news(ticker: str, name: str) -> str:
             news_text += f"\n--- [Local/Korean] 기사 {idx+1} ---\n"
             news_text += f"제목: {result['title']}\n"
             news_text += f"내용: {result['content']}\n"
+            if result.get('url'):
+                news_text += f"URL: {result['url']}\n"
 
     else:
         # US Stock: 티커 + 첫 단어로 검색
@@ -159,6 +197,8 @@ def get_asset_news(ticker: str, name: str) -> str:
             news_text += f"\n--- 기사 {idx+1} ---\n"
             news_text += f"Title: {result['title']}\n"
             news_text += f"Content: {result['content']}\n"
+            if result.get('url'):
+                news_text += f"URL: {result['url']}\n"
 
     if not news_text.strip():
         news_text = "⚠️ 수집된 뉴스가 없습니다."
