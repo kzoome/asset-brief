@@ -262,6 +262,49 @@ def fetch_google_news(query: str, max_results: int = 5, days: int = 1) -> list:
         print(f"   ⚠️ Google News RSS 수집 실패: {e}")
         return []
 
+def fetch_naver_news(query: str, max_results: int = 5) -> list:
+    """Naver News 검색 API를 통해 기사를 가져옵니다."""
+    import urllib.parse
+    import urllib.request
+    import json
+    
+    client_id = os.getenv("NAVER_CLIENT_ID")
+    client_secret = os.getenv("NAVER_SECRET_KEY")
+    
+    if not client_id or not client_secret:
+        return []
+        
+    enc_query = urllib.parse.quote(query)
+    url = f"https://openapi.naver.com/v1/search/news.json?query={enc_query}&display={max_results}&sort=sim"
+    
+    request = urllib.request.Request(url)
+    request.add_header("X-Naver-Client-Id", client_id)
+    request.add_header("X-Naver-Client-Secret", client_secret)
+    
+    try:
+        response = urllib.request.urlopen(request)
+        if response.getcode() == 200:
+            data = json.loads(response.read().decode('utf-8'))
+            results = []
+            
+            # BeautifulSoup for stripping HTML tags from title/description
+            from bs4 import BeautifulSoup
+            
+            for item in data.get('items', []):
+                title = BeautifulSoup(item.get('title', ''), "html.parser").get_text()
+                desc = BeautifulSoup(item.get('description', ''), "html.parser").get_text()
+                
+                results.append({
+                    "title": title,
+                    "url": item.get('link', ''),
+                    "content": desc,
+                    "published_date": item.get('pubDate', '')
+                })
+            return results
+    except Exception as e:
+        print(f"   ⚠️ Naver News API 수집 실패: {e}")
+    return []
+
 def get_asset_news(ticker: str, name: str) -> str:
     """자산군에 따라 최적화된 방식으로 뉴스를 검색합니다.
 
@@ -300,12 +343,20 @@ def get_asset_news(ticker: str, name: str) -> str:
         name_kr = get_ticker_name_kr(ticker)
         query = name_kr          # 한글명만으로 검색
         print(f"   👉 Query(Local): {query}")
-        results = _search_tavily(query, TRUSTED_DOMAINS_KR, max_results=3)
         
-        # Tavily 검색 결과가 없으면 Google News RSS 로 폴백 (국내 주요 뉴스 소식 보완)
+        # 1순위: API 키가 있다면 네이버 뉴스를 최우선으로 수집
+        results = fetch_naver_news(query, max_results=3)
+        if results:
+            print(f"   ✅ Naver News API로 국내 기사 수집 완료")
+        
+        # 2순위: 네이버 수집 결과가 없거나 실패 시 Tavily 시도
         if not results:
-            print(f"   ⚠️ Tavily 국내 검색 결과 없음. Google News RSS로 대체 수집 🚀")
-            results = fetch_google_news(query, max_results=3, days=1)
+            results = _search_tavily(query, TRUSTED_DOMAINS_KR, max_results=3)
+            
+            # 3순위: Tavily 검색 결과도 없으면 Google News RSS 로 최후 폴백
+            if not results:
+                print(f"   ⚠️ Tavily 국내 검색 결과 없음. Google News RSS로 대체 수집 🚀")
+                results = fetch_google_news(query, max_results=3, days=1)
             
         for idx, result in enumerate(results):
             news_text += f"\n--- [Local/Korean] 기사 {idx+1} ---\n"
