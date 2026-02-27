@@ -344,19 +344,23 @@ def get_asset_news(ticker: str, name: str) -> str:
         query = name_kr          # 한글명만으로 검색
         print(f"   👉 Query(Local): {query}")
         
-        # 1순위: API 키가 있다면 네이버 뉴스를 최우선으로 수집
-        results = fetch_naver_news(query, max_results=3)
-        if results:
-            print(f"   ✅ Naver News API로 국내 기사 수집 완료")
+        # 1순위: 네이버 뉴스와 구글 뉴스 RSS를 모두 수집
+        results = []
         
-        # 2순위: 네이버 수집 결과가 없거나 실패 시 Tavily 시도
-        if not results:
-            results = _search_tavily(query, TRUSTED_DOMAINS_KR, max_results=3)
+        results_naver = fetch_naver_news(query, max_results=3)
+        if results_naver:
+            print(f"   ✅ Naver News API 수집 완료 ({len(results_naver)}건)")
+            results.extend(results_naver)
             
-            # 3순위: Tavily 검색 결과도 없으면 Google News RSS 로 최후 폴백
-            if not results:
-                print(f"   ⚠️ Tavily 국내 검색 결과 없음. Google News RSS로 대체 수집 🚀")
-                results = fetch_google_news(query, max_results=3, days=1)
+        results_google = fetch_google_news(query, max_results=3, days=1)
+        if results_google:
+            print(f"   ✅ Google News RSS 수집 완료 ({len(results_google)}건)")
+            results.extend(results_google)
+        
+        # 2순위: 둘 다 결과가 없을 경우 최후의 수단으로 Tavily 검색
+        if not results:
+            print(f"   ⚠️ Naver 및 Google News RSS 검색 결과 없음. Tavily로 대체 수집 🚀")
+            results = _search_tavily(query, TRUSTED_DOMAINS_KR, max_results=3)
             
         for idx, result in enumerate(results):
             news_text += f"\n--- [Local/Korean] 기사 {idx+1} ---\n"
