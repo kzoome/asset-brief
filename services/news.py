@@ -109,9 +109,10 @@ def _get_yfinance_news(ticker: str, max_items: int = 5) -> str:
 
             news_text += f"\n--- [Yahoo Finance] 기사 {count+1} ---\n"
             news_text += f"Title: {title}\n"
-            news_text += f"Source: {publisher}\n"
             if link:
-                news_text += f"URL: {link}\n"
+                news_text += f"Source: {publisher} {link}\n"
+            else:
+                news_text += f"Source: {publisher}\n"
             count += 1
             if count >= max_items:
                 break
@@ -350,7 +351,7 @@ def get_asset_news(ticker: str, name: str) -> str:
             news_text += f"Title: {result['title']}\n"
             news_text += f"Content: {result['content']}\n"
             if result.get('url'):
-                news_text += f"URL: {result['url']}\n"
+                news_text += f"Source: {result['url']}\n"
 
         # 2) 국내 뉴스: 한글명으로 국내 경제지 검색
         name_kr = get_ticker_name_kr(ticker)
@@ -380,19 +381,28 @@ def get_asset_news(ticker: str, name: str) -> str:
             news_text += f"제목: {result['title']}\n"
             news_text += f"내용: {result['content']}\n"
             if result.get('url'):
-                news_text += f"URL: {result['url']}\n"
+                news_text += f"Source: {result['url']}\n"
 
     else:
         # US Stock: 티커 + 첫 단어로 검색
         query = f"{ticker} {name.split()[0]}"
         print(f"   👉 Query: {query}")
-        results = _search_tavily(query, TRUSTED_DOMAINS_US, max_results=3)
+        
+        # 1순위: Google News RSS (US)
+        results = fetch_google_news(query, max_results=3, days=1)
+        if results:
+            print(f"   ✅ Google News RSS 수집 완료 ({len(results)}건)")
+        
+        # 2순위: Google 결과가 없으면 Tavily
+        if not results:
+            results = _search_tavily(query, TRUSTED_DOMAINS_US, max_results=3)
+            
         for idx, result in enumerate(results):
             news_text += f"\n--- 기사 {idx+1} ---\n"
             news_text += f"Title: {result['title']}\n"
             news_text += f"Content: {result['content']}\n"
             if result.get('url'):
-                news_text += f"URL: {result['url']}\n"
+                news_text += f"Source: {result['url']}\n"
 
     if not news_text.strip():
         news_text = "⚠️ 수집된 뉴스가 없습니다."
