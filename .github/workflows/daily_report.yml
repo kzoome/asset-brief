@@ -17,7 +17,11 @@ jobs:
   us-briefing:
     name: 🇺🇸 미국 주식 브리핑 (KST 09:07)
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '07 0 * * 2-6'
+    # 스케줄: US cron일 때만 / 수동: market이 us 또는 all일 때만
+    if: >-
+      github.event.schedule == '07 0 * * 2-6' ||
+      (github.event_name == 'workflow_dispatch' &&
+       (github.event.inputs.market == 'us' || github.event.inputs.market == 'all'))
 
     steps:
       - name: Checkout code
@@ -39,14 +43,16 @@ jobs:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          MARKET=${{ github.event.inputs.market || 'us' }}
-          python main.py --market $MARKET
+        run: python main.py --market us
 
   kr-briefing:
     name: 🇰🇷 한국 주식 브리핑 (KST 16:13)
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '13 7 * * 1-5'
+    # 스케줄: KR cron일 때만 / 수동: market이 kr 또는 all일 때만
+    if: >-
+      github.event.schedule == '13 7 * * 1-5' ||
+      (github.event_name == 'workflow_dispatch' &&
+       (github.event.inputs.market == 'kr' || github.event.inputs.market == 'all'))
 
     steps:
       - name: Checkout code
@@ -66,8 +72,8 @@ jobs:
         env:
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_SECRET_KEY: ${{ secrets.NAVER_SECRET_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          MARKET=${{ github.event.inputs.market || 'kr' }}
-          python main.py --market $MARKET
+        run: python main.py --market kr
