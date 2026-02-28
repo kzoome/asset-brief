@@ -73,7 +73,7 @@ async def main(market: str = "all"):
 
     # 5. 전체 브리핑을 하나로 합쳐서 텔레그램 전송
     if all_briefs:
-        header = f"📈 AssetBrief 데일리 브리핑 ({label})\n{datetime.now().strftime('%Y-%m-%d')}\n{'─'*20}\n\n"
+        header = f"📈 AssetBrief 데일리 브리핑 ({label})\n{datetime.now().strftime('%Y-%m-%d')}\n\n"
         full_message = header + "\n\n".join(all_briefs)
 
         # 텔레그램 메시지 최대 길이(4096자) 초과 시 자동 분할 전송
