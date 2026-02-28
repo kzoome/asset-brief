@@ -9,7 +9,7 @@ async def send_telegram_message(message: str):
     if token and chat_id:
         try:
             bot = Bot(token=token)
-            await bot.send_message(chat_id=chat_id, text=message)
+            await bot.send_message(chat_id=chat_id, text=message, parse_mode="HTML")
         except Exception as e:
             print(f"⚠️ 텔레그램 메시지 전송 실패: {e}")
     else:
