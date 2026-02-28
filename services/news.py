@@ -386,8 +386,20 @@ def get_asset_news(ticker: str, name: str) -> str:
                 news_text += f"Source: {result['url']}\n"
 
     else:
-        # US Stock: 티커 또는 회사명으로 검색하여 관련도를 높임
-        query = f'{ticker} OR {name.split()[0]}'
+        # US Stock: 회사명에서 불필요한 기업 형태 식별자(Inc, Corp 등) 제거
+        import re
+        clean_name = re.sub(r'(?i)\b(inc|corp|corporation|co|ltd|plc|company|holdings?|group|international|limited)\b\.?', '', name).strip()
+        # 쉼표나 특수문자 제거
+        clean_name = re.sub(r'[,]+', '', clean_name).strip()
+        # 공백이 여러개면 하나로
+        clean_name = re.sub(r'\s+', ' ', clean_name)
+        
+        # 빈 문자열이면 원래 이름의 첫 단어 사용 (안전망)
+        if not clean_name:
+            clean_name = name.split()[0]
+            
+        # 티커 또는 정제된 회사명으로 검색하여 관련도를 높임
+        query = f'{ticker} OR "{clean_name}"'
         print(f"   👉 Query: {query}")
         
         # 1순위: Tavily (신뢰 도메인 한정, 고품질)
