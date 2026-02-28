@@ -71,11 +71,13 @@ def _get_yfinance_news(ticker: str, max_items: int = 5) -> str:
             return ""
 
         # 티커 및 회사명 키워드 목록 (제목 기반 관련성 필터)
+        import re as _re
         name = obj.info.get("shortName", "") or obj.info.get("longName", "") or ""
         keywords = [ticker.split(".")[0].lower()]
         for word in name.split():
-            if len(word) >= 3:  # 짧은 단어(Inc, Co 등) 제외
-                keywords.append(word.lower())
+            clean = _re.sub(r'[^a-zA-Z0-9가-힣]', '', word).lower()
+            if len(clean) >= 3:  # 짧은 단어(Inc, Co 등) 제외
+                keywords.append(clean)
 
         news_text = ""
         count = 0
