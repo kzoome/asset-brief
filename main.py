@@ -78,9 +78,11 @@ async def main(market: str = "all"):
 
         # 텔레그램 메시지 최대 길이(4096자) 초과 시 자동 분할 전송
         MAX_LEN = 4096
+        import re
+        
         if len(full_message) <= MAX_LEN:
             print("\n=== 텔레그램 전송 예정 메시지 ===")
-            print(full_message)
+            print(re.sub(r'<[^>]+>', '', full_message))
             print("=================================\n")
             await send_telegram_message(full_message)
             print("📤 텔레그램 전송 완료")
@@ -100,7 +102,7 @@ async def main(market: str = "all"):
             print(f"\n=== 텔레그램 전송 예정 메시지 (총 {len(chunks)}개 부분) ===")
             for i, chunk in enumerate(chunks, 1):
                 print(f"--- Part {i} ---")
-                print(chunk)
+                print(re.sub(r'<[^>]+>', '', chunk))
             print("=================================\n")
             
             for i, chunk in enumerate(chunks, 1):
