@@ -7,13 +7,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 client_id = os.getenv("NAVER_CLIENT_ID")
-client_secret = os.getenv("NAVER_CLIENT_SECRET")
+client_secret = os.getenv("NAVER_SECRET_KEY")
 
 if not client_id or not client_secret:
     print("Naver API keys not found in .env")
 else:
     encText = urllib.parse.quote("SK하이닉스")
-    url = f"https://openapi.naver.com/v1/search/news?query={encText}&display=5&sort=sim"
+    url = f"https://openapi.naver.com/v1/search/news.json?query={encText}&display=5&sort=sim"
     
     request = urllib.request.Request(url)
     request.add_header("X-Naver-Client-Id", client_id)

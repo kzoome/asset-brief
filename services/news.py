@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta
 import yfinance as yf
 from tavily import TavilyClient
-from utils.market import get_asset_type, get_ticker_name_kr
+from utils.market import get_asset_type, get_ticker_name_kr, get_ticker_name
 
 # main.py에서 load_dotenv()가 선행되므로 이 시점에 환경변수 로딩 가능
 tavily_api_key = os.getenv("TAVILY_API_KEY")
@@ -344,7 +344,7 @@ def get_asset_news(ticker: str, name: str) -> str:
     if asset_type == "KR_STOCK":
         # 1) 글로벌 외신: 최적화된 영문 키워드로 영미권 매체 검색
         #    (신뢰 도메인 한정이므로 min_score를 낮춰도 노이즈가 적음)
-        query_global = KR_GLOBAL_QUERY_MAP.get(ticker, name)
+        query_global = KR_GLOBAL_QUERY_MAP.get(ticker, get_ticker_name(ticker))
         print(f"   👉 Query(Global): {query_global}")
         results_global = _search_tavily(query_global, TRUSTED_DOMAINS_US,
                                         max_results=3, min_score=0.03)
@@ -356,8 +356,8 @@ def get_asset_news(ticker: str, name: str) -> str:
                 news_text += f"Source: {result['url']}\n"
 
         # 2) 국내 뉴스: 한글명으로 국내 경제지 검색
-        name_kr = get_ticker_name_kr(ticker)
-        query = name_kr          # 한글명만으로 검색
+        # name_kr = get_ticker_name_kr(ticker) is no longer needed as name is already KR name
+        query = name          # 한글명만으로 검색
         print(f"   👉 Query(Local): {query}")
         
         # 1순위: 네이버 뉴스와 구글 뉴스 RSS를 모두 수집

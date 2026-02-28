@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 환경변수 로드 완료 후 모듈 임포트
-from utils.market import get_ticker_name, get_market_data
+from utils.market import get_ticker_name_kr, get_market_data
 from services.news import get_asset_news
 from services.llm import summarize_news
 from services.notifier import send_telegram_message
@@ -50,7 +50,7 @@ async def main(market: str = "all"):
     for ticker in tickers:
         try:
             # 0. 종목명 추출
-            name = get_ticker_name(ticker)
+            name = get_ticker_name_kr(ticker)
 
             # 1. 뉴스 수집 (Retrieval)
             news_data = get_asset_news(ticker, name)
@@ -59,7 +59,7 @@ async def main(market: str = "all"):
             market_data = get_market_data(ticker)
 
             # 3. 뉴스 요약 (Generation)
-            briefing = summarize_news(ticker, news_data)
+            briefing = summarize_news(ticker, name, news_data)
             
             # 4. 결과 출력
             result_msg = f"━━━━━━━━━━\n📊 <b>{name} ({ticker})</b>\n{market_data}\n\n{briefing}"
