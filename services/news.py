@@ -124,7 +124,7 @@ def _get_yfinance_news(ticker: str, max_items: int = 5) -> str:
         return ""
 
 
-def _search_tavily(query: str, include_domains: list, max_results: int = 3,
+def _search_tavily(query: str, include_domains: list, max_results: int = 5,
                    days: int = 1, min_score: float = 0.1) -> list:
     """Tavily basic 검색을 도메인 필터링과 함께 수행합니다. (1 크레딧/건)"""
     if not tavily_client:
@@ -347,7 +347,7 @@ def get_asset_news(ticker: str, name: str) -> str:
         query_global = KR_GLOBAL_QUERY_MAP.get(ticker, get_ticker_name(ticker))
         print(f"   👉 Query(Global): {query_global}")
         results_global = _search_tavily(query_global, TRUSTED_DOMAINS_US,
-                                        max_results=3, min_score=0.03)
+                                        max_results=5, min_score=0.03)
         for idx, result in enumerate(results_global):
             news_text += f"\n--- [Global/English] 기사 {idx+1} ---\n"
             news_text += f"Title: {result['title']}\n"
@@ -363,12 +363,12 @@ def get_asset_news(ticker: str, name: str) -> str:
         # 1순위: 네이버 뉴스와 구글 뉴스 RSS를 모두 수집
         results = []
         
-        results_naver = fetch_naver_news(query, max_results=3)
+        results_naver = fetch_naver_news(query, max_results=5)
         if results_naver:
             print(f"   ✅ Naver News API 수집 완료 ({len(results_naver)}건)")
             results.extend(results_naver)
             
-        results_google = fetch_google_news(query, max_results=3, days=1)
+        results_google = fetch_google_news(query, max_results=5, days=1)
         if results_google:
             print(f"   ✅ Google News RSS 수집 완료 ({len(results_google)}건)")
             results.extend(results_google)
@@ -376,7 +376,7 @@ def get_asset_news(ticker: str, name: str) -> str:
         # 2순위: 둘 다 결과가 없을 경우 최후의 수단으로 Tavily 검색
         if not results:
             print(f"   ⚠️ Naver 및 Google News RSS 검색 결과 없음. Tavily로 대체 수집 🚀")
-            results = _search_tavily(query, TRUSTED_DOMAINS_KR, max_results=3)
+            results = _search_tavily(query, TRUSTED_DOMAINS_KR, max_results=5)
             
         for idx, result in enumerate(results):
             news_text += f"\n--- [Local/Korean] 기사 {idx+1} ---\n"
@@ -403,11 +403,11 @@ def get_asset_news(ticker: str, name: str) -> str:
         print(f"   👉 Query: {query}")
         
         # 1순위: Tavily (신뢰 도메인 한정, 고품질)
-        results = _search_tavily(query, TRUSTED_DOMAINS_US, max_results=3)
+        results = _search_tavily(query, TRUSTED_DOMAINS_US, max_results=5)
         
         # 2순위: Tavily 결과가 없으면 Google News RSS로 폴백
         if not results:
-            results = fetch_google_news(query, max_results=3, days=1)
+            results = fetch_google_news(query, max_results=5, days=1)
             if results:
                 print(f"   ✅ Google News RSS 폴백 수집 완료 ({len(results)}건)")
             
