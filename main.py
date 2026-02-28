@@ -12,6 +12,7 @@ from utils.market import get_ticker_name_kr, get_market_data
 from services.news import get_asset_news
 from services.llm import summarize_news
 from services.notifier import send_telegram_message
+from services.dart import get_recent_disclosures
 
 async def main(market: str = "all"):
     print(f"=== 📈 AssetBrief 시작 (market={market}) ===\n")
@@ -57,6 +58,12 @@ async def main(market: str = "all"):
             
             # 2. 시장 데이터 수집 (Market Data)
             market_data = get_market_data(ticker)
+            
+            # 2.5 DART 공시 데이터 (KR_STOCK)
+            if market == "kr" or ticker.endswith(".KS") or ticker.endswith(".KQ"):
+                dart_data = get_recent_disclosures(ticker, days=2)
+                if dart_data:
+                    news_data += "\n\n" + dart_data
 
             # 3. 뉴스 요약 (Generation)
             briefing = summarize_news(ticker, name, news_data)
