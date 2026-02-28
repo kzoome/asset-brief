@@ -5,8 +5,9 @@ from telegram import Bot
 def _auto_link_urls(text: str) -> str:
     """HTML <a> 태그로 감싸지지 않은 bare URL을 자동으로 클릭 가능한 링크로 변환합니다."""
     # 이미 <a href="..."> 안에 있는 URL은 건드리지 않고, bare URL만 변환
+    # URL 끝의 괄호/마침표 등은 제외
     return re.sub(
-        r'(?<!href=["\'])(?<!>)(https?://\S+)',
+        r'(?<!href=["\'])(?<!>)(https?://[^\s\)<>]+)',
         r'<a href="\1">링크</a>',
         text
     )
