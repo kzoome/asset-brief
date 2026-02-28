@@ -62,7 +62,7 @@ async def main(market: str = "all"):
             briefing = summarize_news(ticker, news_data)
             
             # 4. 결과 출력
-            result_msg = f"📊 [{ticker} ({name})]\n{market_data}\n\n{briefing}"
+            result_msg = f"━━━━━━━━━━━━━━━━━━━━\n📊 <b>{name} ({ticker})</b>\n{market_data}\n\n{briefing}"
             print(result_msg)
             print("\n" + "="*30 + "\n")
 
