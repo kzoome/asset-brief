@@ -386,8 +386,8 @@ def get_asset_news(ticker: str, name: str) -> str:
                 news_text += f"Source: {result['url']}\n"
 
     else:
-        # US Stock: 티커 + 첫 단어로 검색
-        query = f"{ticker} {name.split()[0]}"
+        # US Stock: 회사명 첫 단어로 검색 (티커를 포함하면 기사 검색량이 너무 줄어듦)
+        query = f'"{name.split()[0]}"'
         print(f"   👉 Query: {query}")
         
         # 1순위: Tavily (신뢰 도메인 한정, 고품질)
