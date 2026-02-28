@@ -70,6 +70,13 @@ def _get_yfinance_news(ticker: str, max_items: int = 5) -> str:
         if not news_items:
             return ""
 
+        # 티커 및 회사명 키워드 목록 (제목 기반 관련성 필터)
+        name = obj.info.get("shortName", "") or obj.info.get("longName", "") or ""
+        keywords = [ticker.split(".")[0].lower()]
+        for word in name.split():
+            if len(word) >= 3:  # 짧은 단어(Inc, Co 등) 제외
+                keywords.append(word.lower())
+
         news_text = ""
         count = 0
         for item in news_items:
@@ -94,6 +101,12 @@ def _get_yfinance_news(ticker: str, max_items: int = 5) -> str:
                 
             if not title:
                 continue
+
+            # 제목에 티커 또는 회사명 키워드가 없으면 무관한 기사로 판단하여 건너뜀
+            title_lower = title.lower()
+            if not any(kw in title_lower for kw in keywords):
+                continue
+
             news_text += f"\n--- [Yahoo Finance] 기사 {count+1} ---\n"
             news_text += f"Title: {title}\n"
             news_text += f"Source: {publisher}\n"
