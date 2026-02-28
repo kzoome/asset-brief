@@ -390,14 +390,14 @@ def get_asset_news(ticker: str, name: str) -> str:
         query = f"{ticker} {name.split()[0]}"
         print(f"   👉 Query: {query}")
         
-        # 1순위: Google News RSS (US)
-        results = fetch_google_news(query, max_results=3, days=1)
-        if results:
-            print(f"   ✅ Google News RSS 수집 완료 ({len(results)}건)")
+        # 1순위: Tavily (신뢰 도메인 한정, 고품질)
+        results = _search_tavily(query, TRUSTED_DOMAINS_US, max_results=3)
         
-        # 2순위: Google 결과가 없으면 Tavily
+        # 2순위: Tavily 결과가 없으면 Google News RSS로 폴백
         if not results:
-            results = _search_tavily(query, TRUSTED_DOMAINS_US, max_results=3)
+            results = fetch_google_news(query, max_results=3, days=1)
+            if results:
+                print(f"   ✅ Google News RSS 폴백 수집 완료 ({len(results)}건)")
             
         for idx, result in enumerate(results):
             news_text += f"\n--- 기사 {idx+1} ---\n"
