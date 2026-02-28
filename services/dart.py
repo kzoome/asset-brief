@@ -26,6 +26,13 @@ def get_recent_disclosures(ticker: str, days: int = 2) -> str:
         if res is None or res.empty:
             return ""
 
+        # 필터링: '비고(rm)' 컬럼에 '공'(공정위 공시)이 포함된 경우 제외
+        # 공정위 공시는 종종 DART 뷰어에서 '검토 중'으로 뜨거나 투자 핵심 정보가 아닐 때가 많음
+        res = res[~res['rm'].str.contains('공', na=False)]
+
+        if res.empty:
+            return ""
+
         # 최신 공시부터 상위 5개만 텍스트로 정리
         max_items = 5
         disclosure_text = "\n[📊 최근 DART 공시]\n"
