@@ -89,7 +89,8 @@ async def main(market: str = "all"):
         # 텔레그램 태그 제거하고 본문만 추출
         clean_b = re.sub(r'<[^>]+>', '', b)
         ticker_briefs_summary += clean_b + "\n"
-        
+    
+    print(f"📊 분석을 위한 종목 브리핑 요약본 생성 완료 (길이: {len(ticker_briefs_summary)}자)")
     global_insight = generate_global_insight(market_status, market_news, ticker_briefs_summary)
 
     # 5. 전체 브리핑을 하나로 합쳐서 텔레그램 전송

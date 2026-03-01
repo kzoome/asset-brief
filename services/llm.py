@@ -51,33 +51,35 @@ def generate_global_insight(market_status: str, market_news: str, ticker_briefs:
     if not gemini_client:
         return ""
 
-    print("🧠 전체 시장 인사이트 도출 중...\n")
-    
-    prompt = f"""
-    [오늘의 시장 데이터]
-    {market_status}
-
-    [주요 시황 뉴스]
-    {market_news}
-
-    [개별 종목 브리핑 요약]
-    {ticker_briefs}
-    
-    위 데이터를 바탕으로 가치투자(70%)와 추세추종(30%)을 결합한 하이브리드 투자 관점에서의 오늘의 인사이트를 작성해줘.
-    """
+    model_name = 'gemini-3.1-pro-preview'
+    print(f"🧠 전체 시장 인사이트 도출 중... ({model_name} 사용)\n")
     
     try:
-        # 사용자가 명시한 최신 고성능 모델(3.1 Pro) 사용
-        model_name = 'gemini-3.1-pro-preview'
+        # 60초 타임아웃 설정하여 무한 대기 방지
         response = gemini_client.models.generate_content(
             model=model_name,
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPTS.get("GLOBAL_INSIGHT", "당신은 투자 전문가입니다."),
-                temperature=0.3
+                temperature=0.3,
+                http_options={'timeout': 60}
             )
         )
         return response.text or "⚠️ 인사이트를 생성할 수 없습니다."
     except Exception as e:
         print(f"⚠️ Global Insight 생성 오류: {e}")
-        return "⚠️ 인사이트 생성 중 오류가 발생했습니다."
+        # 타임아웃이나 오류 발생 시 Flash 모델로 재시도 (안정성 확보)
+        try:
+            print("🔄 Flash 모델로 재시도 중...")
+            response = gemini_client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_PROMPTS.get("GLOBAL_INSIGHT", "당신은 투자 전문가입니다."),
+                    temperature=0.2,
+                    http_options={'timeout': 30}
+                )
+            )
+            return response.text + "\n(⚠️ Pro 모델 지연으로 Flash 모델 결과가 제공되었습니다.)"
+        except Exception as retry_e:
+            return f"⚠️ 인사이트 생성 중 최종 오류가 발생했습니다: {retry_e}"
