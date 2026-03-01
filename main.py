@@ -1,6 +1,7 @@
 import os
 import asyncio
 import argparse
+import re
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -8,14 +9,18 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 환경변수 로드 완료 후 모듈 임포트
-from utils.market import get_ticker_name_kr, get_market_data
-from services.news import get_asset_news
-from services.llm import summarize_news
+from utils.market import get_ticker_name_kr, get_market_data, get_global_market_status
+from services.news import get_asset_news, get_market_news
+from services.llm import summarize_news, generate_global_insight
 from services.notifier import send_telegram_message
 from services.dart import get_recent_disclosures
 
 async def main(market: str = "all"):
     print(f"=== 📈 AssetBrief 시작 (market={market}) ===\n")
+
+    # ── 0. 시장 전반 지수 및 뉴스 수집 ──
+    market_status = get_global_market_status(market)
+    market_news = get_market_news(market)
 
     # ── 종목 정의 ──
     US_TICKERS = [
@@ -78,14 +83,33 @@ async def main(market: str = "all"):
         except Exception as e:
             print(f"❌ [{ticker}] 에러가 발생했습니다: {e}\n")
 
+    # ── 4. 전체 인사이트 도출 ──
+    ticker_briefs_summary = ""
+    for b in all_briefs:
+        # 텔레그램 태그 제거하고 본문만 추출
+        clean_b = re.sub(r'<[^>]+>', '', b)
+        ticker_briefs_summary += clean_b + "\n"
+        
+    global_insight = generate_global_insight(market_status, market_news, ticker_briefs_summary)
+
     # 5. 전체 브리핑을 하나로 합쳐서 텔레그램 전송
     if all_briefs:
         header = f"📈 AssetBrief 데일리 브리핑 ({label})\n{datetime.now().strftime('%Y-%m-%d')}\n\n"
-        full_message = header + "\n\n".join(all_briefs)
+        
+        # 인사이트 섹션 추가
+        content_parts = []
+        if global_insight:
+            content_parts.append(global_insight + "\n\n" + "━" * 15 + "\n")
+        
+        if market_status:
+            content_parts.append(f"<b>[📊 시장 지표]</b>\n{market_status}\n\n")
+            
+        content_parts.extend(all_briefs)
+        
+        full_message = header + "\n\n".join(content_parts)
 
         # 텔레그램 메시지 최대 길이(4096자) 초과 시 자동 분할 전송
         MAX_LEN = 4096
-        import re
         
         if len(full_message) <= MAX_LEN:
             print("\n=== 텔레그램 전송 예정 메시지 ===")
@@ -96,16 +120,28 @@ async def main(market: str = "all"):
         else:
             chunks = []
             current = header
+            
+            # 모든 구성요소를 하나의 리스트로 통합하여 순차적으로 청크 체킹
+            all_parts = []
+            if global_insight:
+                all_parts.append(global_insight + "\n\n" + "━" * 15 + "\n")
+            if market_status:
+                all_parts.append(f"<b>[📊 시장 지표]</b>\n{market_status}\n\n")
             for brief in all_briefs:
-                segment = brief + "\n\n"
-                if len(current) + len(segment) > MAX_LEN:
-                    chunks.append(current.rstrip())
-                    current = segment
+                all_parts.append(brief + "\n\n")
+                
+            for part in all_parts:
+                if len(current) + len(part) > MAX_LEN:
+                    # 현재 쌓인 current가 있다면 먼저 청크로 분리
+                    if current.strip():
+                        chunks.append(current.rstrip())
+                    # 그리고 새로운 current는 새 파트로 시작
+                    current = part
                 else:
-                    current += segment
+                    current += part
+                    
             if current.strip():
                 chunks.append(current.rstrip())
-                
             print(f"\n=== 텔레그램 전송 예정 메시지 (총 {len(chunks)}개 부분) ===")
             for i, chunk in enumerate(chunks, 1):
                 print(f"--- Part {i} ---")
