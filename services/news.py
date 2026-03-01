@@ -278,11 +278,12 @@ def fetch_google_news(query: str, max_results: int = 5, days: int = 1) -> list:
         print(f"   ⚠️ Google News RSS 수집 실패: {e}")
         return []
 
-def fetch_naver_news(query: str, max_results: int = 5) -> list:
-    """Naver News 검색 API를 통해 기사를 가져옵니다."""
+def fetch_naver_news(query: str, max_results: int = 5, days: int = 1) -> list:
+    """Naver News 검색 API를 통해 최신 기사를 가져옵니다."""
     import urllib.parse
     import urllib.request
     import json
+    from email.utils import parsedate_to_datetime
     
     client_id = os.getenv("NAVER_CLIENT_ID")
     client_secret = os.getenv("NAVER_SECRET_KEY")
@@ -291,7 +292,8 @@ def fetch_naver_news(query: str, max_results: int = 5) -> list:
         return []
         
     enc_query = urllib.parse.quote(query)
-    url = f"https://openapi.naver.com/v1/search/news.json?query={enc_query}&display={max_results}&sort=sim"
+    # sort=date로 변경하여 최신순 수집
+    url = f"https://openapi.naver.com/v1/search/news.json?query={enc_query}&display={max_results * 2}&sort=date"
     
     request = urllib.request.Request(url)
     request.add_header("X-Naver-Client-Id", client_id)
@@ -302,11 +304,21 @@ def fetch_naver_news(query: str, max_results: int = 5) -> list:
         if response.getcode() == 200:
             data = json.loads(response.read().decode('utf-8'))
             results = []
+            cutoff = datetime.now() - timedelta(days=days)
             
-            # BeautifulSoup for stripping HTML tags from title/description
             from bs4 import BeautifulSoup
             
             for item in data.get('items', []):
+                # pubDate 파싱 (RFC 822 format: "Fri, 27 Feb 2026 14:15:00 +0900")
+                pub_date_str = item.get('pubDate', '')
+                if pub_date_str:
+                    try:
+                        pub_dt = parsedate_to_datetime(pub_date_str).replace(tzinfo=None)
+                        if pub_dt < cutoff:
+                            continue
+                    except Exception:
+                        pass
+
                 title = BeautifulSoup(item.get('title', ''), "html.parser").get_text()
                 desc = BeautifulSoup(item.get('description', ''), "html.parser").get_text()
                 
@@ -314,8 +326,15 @@ def fetch_naver_news(query: str, max_results: int = 5) -> list:
                     "title": title,
                     "url": item.get('link', ''),
                     "content": desc,
-                    "published_date": item.get('pubDate', '')
+                    "published_date": pub_date_str
                 })
+                if len(results) >= max_results:
+                    break
+            
+            dropped = len(data.get('items', [])) - len(results)
+            if dropped > 0:
+                print(f"   🔻 Naver 뉴스 필터링: {dropped}건 제외 (오래된 기사)")
+                
             return results
     except Exception as e:
         print(f"   ⚠️ Naver News API 수집 실패: {e}")
