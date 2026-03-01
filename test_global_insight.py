@@ -25,8 +25,8 @@ async def test():
     print("✅ Market News OK\n")
 
     print("--- 3. Global Insight Test ---")
-    ticker_briefs = "- Apple: Q3 earnings beat expectations. (Source: reuters.com)\n- Samsung: HBM3E production ramp-up. (Source: hankyung.com)"
-    insight = generate_global_insight(status, news, ticker_briefs)
+    trend_ledger = "[Apple] AI 아이폰 기대감으로 상승 반전\n[Samsung] HBM3E 양산 본격화로 수익성 개선 전망"
+    insight = generate_global_insight(status, news, trend_ledger)
     print("--- [Generated Insight] ---")
     print(insight)
     print(f"DEBUG: insight length: {len(insight)}")

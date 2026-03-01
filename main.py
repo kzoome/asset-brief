@@ -11,7 +11,7 @@ load_dotenv()
 # 환경변수 로드 완료 후 모듈 임포트
 from utils.market import get_ticker_name_kr, get_market_data, get_global_market_status
 from services.news import get_asset_news, get_market_news
-from services.llm import summarize_news, generate_global_insight
+from services.llm import summarize_news, generate_global_insight, extract_core_trend
 from services.notifier import send_telegram_message
 from services.dart import get_recent_disclosures
 
@@ -52,6 +52,7 @@ async def main(market: str = "all"):
         label = "전체"
 
     all_briefs = []  # 전체 브리핑 누적
+    trend_ledger = []  # 핵심 트렌드 누적
 
     for ticker in tickers:
         try:
@@ -73,6 +74,11 @@ async def main(market: str = "all"):
             # 3. 뉴스 요약 (Generation)
             briefing = summarize_news(ticker, name, news_data)
             
+            # 3-1. (Map) 핵심 트렌드 1문장 초고속 추출
+            core_trend = extract_core_trend(ticker, briefing)
+            if core_trend:
+                trend_ledger.append(f"[{name}] {core_trend}")
+            
             # 4. 결과 출력
             result_msg = f"━━━━━━━━━━\n📊 <b>{name} ({ticker})</b>\n{market_data}\n\n{briefing}"
             print(result_msg)
@@ -83,15 +89,9 @@ async def main(market: str = "all"):
         except Exception as e:
             print(f"❌ [{ticker}] 에러가 발생했습니다: {e}\n")
 
-    # ── 4. 전체 인사이트 도출 ──
-    ticker_briefs_summary = ""
-    for b in all_briefs:
-        # 텔레그램 태그 제거하고 본문만 추출
-        clean_b = re.sub(r'<[^>]+>', '', b)
-        ticker_briefs_summary += clean_b + "\n"
-    
-    print(f"📊 분석을 위한 종목 브리핑 요약본 생성 완료 (길이: {len(ticker_briefs_summary)}자)")
-    global_insight = generate_global_insight(market_status, market_news, ticker_briefs_summary)
+    # ── 4. 전체 인사이트 도출 (Reduce) ──
+    print(f"📊 압축된 종목 트렌드 개수: {len(trend_ledger)}개")
+    global_insight = generate_global_insight(market_status, market_news, "\n".join(trend_ledger))
 
     # 5. 전체 브리핑을 하나로 합쳐서 텔레그램 전송
     if all_briefs:
