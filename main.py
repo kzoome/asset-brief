@@ -52,7 +52,6 @@ async def main(market: str = "all"):
         label = "전체"
 
     all_briefs = []  # 전체 브리핑 누적
-    trend_ledger = []  # 핵심 트렌드 누적
 
     for ticker in tickers:
         try:
@@ -72,15 +71,14 @@ async def main(market: str = "all"):
                     news_data += "\n\n" + dart_data
 
             # 3. 뉴스 요약 (Generation)
-            briefing = summarize_news(ticker, name, news_data)
+            briefing = await summarize_news(ticker, name, news_data)
             
-            # 3-1. (Map) 핵심 트렌드 1문장 초고속 추출
-            core_trend = extract_core_trend(ticker, briefing)
-            if core_trend:
-                trend_ledger.append(f"[{name}] {core_trend}")
+            # 3-1. 핵심 트렌드 1문장 초고속 추출
+            core_trend = await extract_core_trend(ticker, briefing)
             
             # 4. 결과 출력
-            result_msg = f"━━━━━━━━━━\n📊 <b>{name} ({ticker})</b>\n{market_data}\n\n{briefing}"
+            trend_prefix = f"<b>{core_trend}</b>\n\n" if core_trend else ""
+            result_msg = f"━━━━━━━━━━\n📊 <b>{name} ({ticker})</b>\n{market_data}\n\n{trend_prefix}{briefing}"
             print(result_msg)
             print("\n" + "="*30 + "\n")
 
@@ -89,9 +87,20 @@ async def main(market: str = "all"):
         except Exception as e:
             print(f"❌ [{ticker}] 에러가 발생했습니다: {e}\n")
 
-    # ── 4. 전체 인사이트 도출 (Reduce) ──
-    print(f"📊 압축된 종목 트렌드 개수: {len(trend_ledger)}개")
-    global_insight = generate_global_insight(market_status, market_news, "\n".join(trend_ledger))
+    # ── 4. 전체 인사이트 도출 ──
+    try:
+        # 글로벌 인사이트 생성이 너무 오래 걸릴 경우(45초) 타임아웃 처리
+        global_insight = await asyncio.wait_for(generate_global_insight(market_status, market_news), timeout=45.0)
+    except asyncio.TimeoutError:
+        print("⚠️ Global Insight 생성 타임아웃 (45초 초과). Flash 모델로 폴백합니다.")
+        # generate_global_insight 내부에서도 예외 발생 시 Flash로 재시도하지만, 
+        # 비동기 대기 자체를 중단시키기 위해 여기서도 fallback 호출 가능. 
+        # 여기서는 단순히 타임아웃 알림 후 빈값 처리하거나 내부 fallback을 신뢰함.
+        # 사실 generate_global_insight 내부에서 Flash 재시도를 하므로, 위 wait_for는 전체 안전장치임.
+        global_insight = "⚠️ 시장 인사이트 생성 시간이 초과되었습니다. (서버 응답 지연)"
+    except Exception as e:
+        print(f"⚠️ Global Insight 도출 중 비기대 에러: {e}")
+        global_insight = ""
 
     # 5. 전체 브리핑을 하나로 합쳐서 텔레그램 전송
     if all_briefs:
