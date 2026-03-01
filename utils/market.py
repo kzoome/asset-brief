@@ -113,7 +113,7 @@ def get_global_market_status(market: str = "all") -> str:
             y1 = get_chg(252)
             
             val_fmt = f"{curr:,.2f}" if ticker != "USDKRW=X" else f"{curr:,.1f}"
-            results.append(f"• {label}: {val_fmt} (1D {d1} / 1M {m1})")
+            results.append(f"• {label}: {val_fmt}\n  ╰─ 1D {d1} / 1M {m1}")
         except Exception:
             continue
             
