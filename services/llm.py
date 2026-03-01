@@ -14,7 +14,7 @@ def get_gemini_client():
             _client = genai.Client(api_key=google_api_key)
     return _client
 
-def summarize_news(ticker: str, name: str, news_data: str) -> str:
+async def summarize_news(ticker: str, name: str, news_data: str) -> str:
     """Gemini API를 이용해 뉴스를 투자자 관점에서 3줄 요약합니다."""
     gemini_client = get_gemini_client()
     if not gemini_client:
@@ -33,7 +33,7 @@ def summarize_news(ticker: str, name: str, news_data: str) -> str:
     
     # 모델 호출 (temperature를 낮춰서 할루시네이션을 줄이고 팩트 위주로 생성)
     try:
-        response = gemini_client.models.generate_content(
+        response = await gemini_client.aio.models.generate_content(
             model='gemini-2.5-flash',
             contents=prompt,
             config=types.GenerateContentConfig(
@@ -45,14 +45,14 @@ def summarize_news(ticker: str, name: str, news_data: str) -> str:
     except Exception as e:
         return f"⚠️ Gemini 생성 오류: {e}"
 
-def extract_core_trend(ticker: str, brief: str) -> str:
+async def extract_core_trend(ticker: str, brief: str) -> str:
     """개별 종목 브리핑에서 가장 핵심적인 동향 1문장을 추출합니다."""
     gemini_client = get_gemini_client()
     if not gemini_client or not brief or brief == "해당 외신 뉴스가 없습니다." or brief == "현재 유의미한 정보 없음":
         return ""
 
     try:
-        response = gemini_client.models.generate_content(
+        response = await gemini_client.aio.models.generate_content(
             model='gemini-2.5-flash',
             contents=f"[{ticker}] 브리핑:\n{brief}",
             config=types.GenerateContentConfig(
@@ -70,13 +70,13 @@ def extract_core_trend(ticker: str, brief: str) -> str:
         print(f"⚠️ [{ticker}] 트렌드 추출 오류: {e}")
         return ""
 
-def generate_global_insight(market_status: str, market_news: str, trend_ledger: str) -> str:
-    """시장 지수, 시황 뉴스 및 개별 종목 핵심 동향을 종합하여 인사이트를 도출합니다."""
+async def generate_global_insight(market_status: str, market_news: str) -> str:
+    """시장 지수 및 시황 뉴스를 종합하여 글로벌 매크로 인사이트를 도출합니다."""
     gemini_client = get_gemini_client()
     if not gemini_client:
         return ""
 
-    model_name = 'gemini-3.1-pro-preview'
+    model_name = 'gemini-2.5-pro'
     print(f"🧠 전체 시장 인사이트 도출 중... ({model_name} 사용)\n")
     
     prompt = f"""
@@ -86,14 +86,11 @@ def generate_global_insight(market_status: str, market_news: str, trend_ledger: 
     [주요 시황 뉴스]
     {market_news}
     
-    [종목별 한 줄 핵심 동향]
-    {trend_ledger}
-    
-    위 데이터를 바탕으로 글로벌 거시경제 흐름과 개별 종목의 구체적 동향을 종합해, 가치투자(70%)와 추세추종(30%)을 결합한 하이브리드 투자 관점에서의 오늘의 시장 인사이트를 작성해줘.
+    위 데이터를 바탕으로 글로벌 거시경제 흐름과 주요 지수를 종합해, 가치투자(70%)와 추세추종(30%)을 결합한 하이브리드 투자 관점에서의 오늘의 시장 인사이트를 작성해줘.
     """
     
     try:
-        response_stream = gemini_client.models.generate_content_stream(
+        response_stream = await gemini_client.aio.models.generate_content_stream(
             model=model_name,
             contents=prompt,
             config=types.GenerateContentConfig(
@@ -102,7 +99,7 @@ def generate_global_insight(market_status: str, market_news: str, trend_ledger: 
             )
         )
         full_response = ""
-        for chunk in response_stream:
+        async for chunk in response_stream:
             if chunk.text:
                 full_response += chunk.text
         return full_response or "⚠️ 인사이트를 생성할 수 없습니다."
@@ -111,7 +108,7 @@ def generate_global_insight(market_status: str, market_news: str, trend_ledger: 
         # 타임아웃이나 오류 발생 시 Flash 모델로 재시도 (안정성 확보)
         try:
             print("🔄 Flash 모델로 재시도 중...")
-            response_stream = gemini_client.models.generate_content_stream(
+            response_stream = await gemini_client.aio.models.generate_content_stream(
                 model='gemini-2.5-flash',
                 contents=prompt,
                 config=types.GenerateContentConfig(
@@ -120,7 +117,7 @@ def generate_global_insight(market_status: str, market_news: str, trend_ledger: 
                 )
             )
             full_response = ""
-            for chunk in response_stream:
+            async for chunk in response_stream:
                 if chunk.text:
                     full_response += chunk.text
             return full_response + "\n(⚠️ Pro 모델 지연으로 Flash 모델 결과가 제공되었습니다.)"
