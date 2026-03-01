@@ -5,3 +5,5 @@ python-telegram-bot
 yfinance
 feedparser
 beautifulsoup4
+OpenDartReader
+pandas
