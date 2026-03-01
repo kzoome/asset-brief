@@ -14,7 +14,7 @@ async def test():
     status = get_global_market_status("all")
     print(status)
     assert "S&P 500" in status
-    assert "1Y:" in status
+    assert "1Y" in status
     assert "USD/KRW" in status
     print("✅ Market Status OK\n")
 

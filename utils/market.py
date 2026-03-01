@@ -75,7 +75,7 @@ def get_market_data(ticker: str) -> str:
         price_fmt = f"{current_price:,.0f}" if currency == "KRW" else f"{current_price:,.2f}"
         
         return (f"💰 Price: {price_fmt} {currency}\n"
-                f"📊 Chg: 1D {fmt_chg(d1)} / 1M {fmt_chg(m1)} / 3M {fmt_chg(m3)} / 1Y {fmt_chg(y1)}")
+                f"📊 Chg: 1D {fmt_chg(d1)} / 1Y {fmt_chg(y1)}")
         
     except Exception as e:
         print(f"⚠️ Market Data Error ({ticker}): {e}")
@@ -113,7 +113,7 @@ def get_global_market_status(market: str = "all") -> str:
             y1 = get_chg(252)
             
             val_fmt = f"{curr:,.2f}" if ticker != "USDKRW=X" else f"{curr:,.1f}"
-            results.append(f"• {label}: {val_fmt} (1D {d1} / 1M {m1} / 1Y {y1})")
+            results.append(f"• {label}: {val_fmt} (1D {d1} / 1Y {y1})")
         except Exception:
             continue
             
