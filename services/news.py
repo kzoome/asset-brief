@@ -112,9 +112,9 @@ def _get_yfinance_news(ticker: str, max_items: int = 5) -> str:
             news_text += f"\n--- [Yahoo Finance] 기사 {count+1} ---\n"
             news_text += f"Title: {title}\n"
             if link:
-                news_text += f"Source: {publisher} {link}\n"
+                news_text += f"{publisher} {link}\n"
             else:
-                news_text += f"Source: {publisher}\n"
+                news_text += f"{publisher}\n"
             count += 1
             if count >= max_items:
                 break
