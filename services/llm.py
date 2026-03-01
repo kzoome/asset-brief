@@ -4,12 +4,19 @@ from google.genai import types
 from utils.market import get_asset_type
 from config.prompts import SYSTEM_PROMPTS
 
-# main.py에서 load_dotenv()가 선행된 이후 로드되므로 정상 작동
-google_api_key = os.getenv("GOOGLE_API_KEY")
-gemini_client = genai.Client(api_key=google_api_key) if google_api_key else None
+_client = None
+
+def get_gemini_client():
+    global _client
+    if _client is None:
+        google_api_key = os.getenv("GOOGLE_API_KEY")
+        if google_api_key:
+            _client = genai.Client(api_key=google_api_key)
+    return _client
 
 def summarize_news(ticker: str, name: str, news_data: str) -> str:
     """Gemini API를 이용해 뉴스를 투자자 관점에서 3줄 요약합니다."""
+    gemini_client = get_gemini_client()
     if not gemini_client:
         return "⚠️ Google API 설정이 누락되어 뉴스를 요약할 수 없습니다."
         
@@ -37,3 +44,40 @@ def summarize_news(ticker: str, name: str, news_data: str) -> str:
         return response.text
     except Exception as e:
         return f"⚠️ Gemini 생성 오류: {e}"
+
+def generate_global_insight(market_status: str, market_news: str, ticker_briefs: str) -> str:
+    """시장 지수, 시황 뉴스, 개별 종목 브리핑을 종합하여 인사이트를 도출합니다."""
+    gemini_client = get_gemini_client()
+    if not gemini_client:
+        return ""
+
+    print("🧠 전체 시장 인사이트 도출 중...\n")
+    
+    prompt = f"""
+    [오늘의 시장 데이터]
+    {market_status}
+
+    [주요 시황 뉴스]
+    {market_news}
+
+    [개별 종목 브리핑 요약]
+    {ticker_briefs}
+    
+    위 데이터를 바탕으로 가치투자(70%)와 추세추종(30%)을 결합한 하이브리드 투자 관점에서의 오늘의 인사이트를 작성해줘.
+    """
+    
+    try:
+        # 사용자가 명시한 최신 고성능 모델(3.1 Pro) 사용
+        model_name = 'gemini-3.1-pro-preview'
+        response = gemini_client.models.generate_content(
+            model=model_name,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPTS.get("GLOBAL_INSIGHT", "당신은 투자 전문가입니다."),
+                temperature=0.3
+            )
+        )
+        return response.text or "⚠️ 인사이트를 생성할 수 없습니다."
+    except Exception as e:
+        print(f"⚠️ Global Insight 생성 오류: {e}")
+        return "⚠️ 인사이트 생성 중 오류가 발생했습니다."

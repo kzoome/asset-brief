@@ -42,40 +42,79 @@ def get_ticker_name_kr(ticker: str) -> str:
     return KR_TICKER_NAME_MAP.get(ticker, get_ticker_name(ticker))
 
 def get_market_data(ticker: str) -> str:
-    """yfinance를 이용해 현재가 및 변동률 정보를 가져옵니다."""
+    """yfinance를 이용해 현재가 및 다기간 변동률 정보를 가져옵니다."""
     try:
         yf_ticker = ticker
         obj = yf.Ticker(yf_ticker)
-        # 1달치 데이터 조회
-        hist = obj.history(period="1mo")
+        # 2년치 데이터 조회 (1Y 변동률 계산 시 누락 방지)
+        hist = obj.history(period="2y")
         
         if hist.empty:
             return "⚠️ 시장 데이터 수집 실패"
         
         current_price = hist['Close'].iloc[-1]
         
-        # 전일 대비 변동률 (1D)
-        if len(hist) >= 2:
-            prev_close = hist['Close'].iloc[-2]
-            daily_change = ((current_price - prev_close) / prev_close) * 100
-            daily_str = f"{daily_change:+.2f}%"
-        else:
-            daily_str = "-"
-            
-        # 30일 전 대비 변동률 (1M)
-        if len(hist) > 0:
-            month_ago_price = hist['Close'].iloc[0]
-            month_change = ((current_price - month_ago_price) / month_ago_price) * 100
-            month_str = f"{month_change:+.2f}%"
-        else:
-            month_str = "-"
+        def get_change(days_ago):
+            if len(hist) > days_ago:
+                old_val = hist['Close'].iloc[-days_ago-1]
+                return ((current_price - old_val) / old_val) * 100
+            return None
+
+        # 변동률 계산 (영업일 기준 근사치)
+        d1 = get_change(1)   # 1D
+        m1 = get_change(21)  # 1M (약 21영업일)
+        m3 = get_change(63)  # 3M (약 63영업일)
+        m6 = get_change(126) # 6M (약 126영업일)
+        y1 = get_change(252) # 1Y (약 252영업일)
+
+        def fmt_chg(val):
+            return f"{val:+.2f}%" if val is not None else "-"
 
         # 통화 및 포맷팅
         currency = "KRW" if ticker.endswith(".KS") or ticker.endswith(".KQ") else "USD"
         price_fmt = f"{current_price:,.0f}" if currency == "KRW" else f"{current_price:,.2f}"
         
-        return f"💰 Price: {price_fmt} {currency} (1D: {daily_str}, 1M: {month_str})"
+        return (f"💰 Price: {price_fmt} {currency} "
+                f"(1D: {fmt_chg(d1)}, 1M: {fmt_chg(m1)}, 3M: {fmt_chg(m3)}, 6M: {fmt_chg(m6)}, 1Y: {fmt_chg(y1)})")
         
     except Exception as e:
         print(f"⚠️ Market Data Error ({ticker}): {e}")
         return ""
+
+def get_global_market_status(market: str = "all") -> str:
+    """주요 시장 지수 및 환율 정보를 가져옵니다 (다기간 변동률 포함)."""
+    indices = []
+    if market in ["us", "all"]:
+        indices += [("^GSPC", "S&P 500"), ("^IXIC", "Nasdaq"), ("^DJI", "Dow Jones")]
+    if market in ["kr", "all"]:
+        indices += [("^KS11", "KOSPI"), ("^KQ11", "KOSDAQ")]
+    
+    indices += [("USDKRW=X", "USD/KRW")]
+
+    results = []
+    for ticker, label in indices:
+        try:
+            obj = yf.Ticker(ticker)
+            hist = obj.history(period="2y")
+            if hist.empty: continue
+            
+            curr = hist['Close'].iloc[-1]
+            
+            def get_chg(days):
+                if len(hist) > days:
+                    old = hist['Close'].iloc[-days-1]
+                    val = ((curr - old) / old) * 100
+                    return f"{val:+.1f}%"
+                return "-"
+
+            d1 = get_chg(1)
+            m1 = get_chg(21)
+            m3 = get_chg(63)
+            y1 = get_chg(252)
+            
+            val_fmt = f"{curr:,.2f}" if ticker != "USDKRW=X" else f"{curr:,.1f}"
+            results.append(f"• {label}: {val_fmt} (1D: {d1}, 1M: {m1}, 3M: {m3}, 1Y: {y1})")
+        except Exception:
+            continue
+            
+    return "\n".join(results)

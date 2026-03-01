@@ -1,0 +1,175 @@
+=== 📈 AssetBrief 시작 (market=us) ===
+
+🌍 시장 뉴스 검색 중: US Stock Market Today
+   ⚠️ HTML 날짜 추출 실패 (https://www.tipranks.com/news/new-amazon-deal-prompts-joint-statement-from-microsoft-msft-and-openai): HTTP Error 403: Forbidden
+   🗓️ 날짜 미상 기사 제외: New Amazon Deal Prompts Joint Statement ...
+   🗓️ 날짜 미상 기사 제외: Stock Market Week: Reaction To Iran, Ber...
+   ⚠️ HTML 날짜 추출 실패 (https://www.tipranks.com/news/ai-moves-to-real-time-nvidia-nvda-readies-new-chip-for-inference-demand): HTTP Error 403: Forbidden
+   🗓️ 날짜 미상 기사 제외: ‘Keeping Its Lead in AI’: Nvidia (NVDA) ...
+   ⚠️ HTML 날짜 추출 실패 (https://www.reuters.com/markets/companies/KPIE.NS/key-metrics/valuation/): HTTP Error 401: HTTP Forbidden
+   🗓️ 날짜 미상 기사 제외: KPIE.NS - | Stock Price & Latest News - ...
+   🔻 필터링: 4건 제외
+🔍 [BRK-B] 뉴스 검색 중... (Type: US_STOCK)
+   👉 Query: BRK-B OR "Berkshire Hathaway New"
+   ⚠️ HTML 날짜 추출 실패 (https://www.wsj.com/business/earnings/greg-abel-berkshire-hathaway-letter-9b32e0fa?gaa_at=eafs&gaa_n=AWEtsqfo20KsuAg8RMRya4RC2bUI_OHG5KizwhEdLVX74K8JKE7T5Txc7ncd&gaa_ts=69a30c3c&gaa_sig=CCcoG4CK413VNQ7DsZc4xytQLkcImSK2nOEJrpLjjQVMkHj7Ngz2VjIXQI9uJv2dB_42wHqnToVgp6FapOhY-Q%3D%3D): HTTP Error 401: HTTP Forbidden
+   🗓️ 날짜 미상 기사 제외: Berkshire’s Abel Pledges to Follow Buffe...
+   ⚠️ HTML 날짜 추출 실패 (https://www.wsj.com/business/earnings/greg-abel-berkshire-hathaway-letter-9b32e0fa?gaa_at=eafs&gaa_n=AWEtsqcG9qGOJXKAMnXVXNxwzmBgw0LrdVPdvhtPuqTXn57W16ngaLRrwnKc&gaa_ts=69a2f94a&gaa_sig=CLSKdwj9u-qWUywpJFc79pyuEbhRCA-FgUwETT2FdLhF01wALCKG7Beu1SzWM14IDcuC35Basy2PPFQmWA9eFQ%3D%3D): HTTP Error 401: HTTP Forbidden
+   🗓️ 날짜 미상 기사 제외: Berkshire Hathaway Earnings Slip on Decl...
+   🔻 필터링: 2건 제외
+🧠 [BRK-B] Gemini가 뉴스를 분석 및 요약 중...
+
+━━━━━━━━━━
+📊 <b>Berkshire Hathaway Inc. New (BRK-B)</b>
+💰 Price: 504.95 USD (1D: +0.45%, 1M: +6.64%, 3M: -0.71%, 6M: +1.86%, 1Y: +2.20%)
+
+- Berkshire Hathaway의 신임 CEO 그렉 아벨은 첫 연례 서한에서 워렌 버핏의 규율 있는 투자 문화를 지속하고 "요새와 같은" 대차대조표를 유지하며, 기록적인 현금 보유액을 서둘러 배치하거나 배당금을 지급할 계획이 없다고 밝혔다. https://www.reuters.com/sustainability/boards-policy-regulation/berkshire-hathaway-profit-falls-writedowns-lower-insurance-income-2026-02-28/
+- Berkshire Hathaway의 4분기 영업 이익은 보험 사업 부문의 수입 감소와 Occidental Petroleum 투자에 대한 감액 상각을 반영하여 30% 감소했다. https://finance.yahoo.com/news/berkshire-hathaways-earnings-stock-price-2020a5d3?siteid=yhoof2&yptr=yahoo
+- 4분기 동안 주식 자사주 매입은 이루어지지 않았다. https://finance.yahoo.com/news/berkshire-hathaways-earnings-stock-price-2020a5d3?siteid=yhoof2&yptr=yahoo
+
+==============================
+
+🔍 [GOOGL] 뉴스 검색 중... (Type: US_STOCK)
+   👉 Query: GOOGL OR "Alphabet"
+   🔻 필터링: 4건 제외
+🧠 [GOOGL] Gemini가 뉴스를 분석 및 요약 중...
+
+━━━━━━━━━━
+📊 <b>Alphabet Inc. (GOOGL)</b>
+💰 Price: 311.76 USD (1D: +1.42%, 1M: -7.22%, 3M: -3.55%, 6M: +50.49%, 1Y: +81.20%)
+
+- 애널리스트들은 구글의 AI 관련 움직임을 고려하여 구글을 상향 조정했다. https://finance.yahoo.com/news/5-big-analyst-ai-moves-093003047.html
+- 알파벳의 청정에너지 투자는 데이터센터 전력 공급 방식과 기업 가치 평가에 영향을 미치고 있다. https://finance.yahoo.com/news/alphabet-clean-energy-bet-reshapes-221409077.html
+- 구글은 로봇 소프트웨어 프로젝트인 Intrinsic을 'Other Bets'에서 본사로 편입시키며, 로봇 분야에서 안드로이드와 같은 전략을 추진하고 있다. https://www.cnbc.com/2026/02/28/google-wants-intrinsic-to-be-android-for-robots-moves-into-physical-ai.html
+
+==============================
+
+🔍 [MSFT] 뉴스 검색 중... (Type: US_STOCK)
+   👉 Query: MSFT OR "Microsoft"
+   🔻 필터링: 5건 제외
+   ✅ Google News RSS 폴백 수집 완료 (5건)
+🧠 [MSFT] Gemini가 뉴스를 분석 및 요약 중...
+
+━━━━━━━━━━
+📊 <b>Microsoft Corporation (MSFT)</b>
+💰 Price: 392.74 USD (1D: -2.24%, 1M: -18.27%, 3M: -17.47%, 6M: -22.17%, 1Y: -1.00%)
+
+- OpenAI와 Microsoft는 공동 성명을 발표했습니다. (https://news.google.com/rss/articles/CBMickFVX3lxTE5YS1NVY0FVWXB6ZVdtdW5Fc2tJTjYxS3p6ZzNuVGN5QUtzZkQyVl9wbDZvY3BSYmU2Y3d3WGJJbVFWaUFhM0RRc3ozTm9ydGpqajYzV01raVp3YV8yLW9ad1NsdWtTWjZOV1Y5R0txS2VCdw?oc=5)
+- Microsoft 게임 사업부의 재무 결과는 수익 감소 및 자산 조정의 영향을 받았습니다. (https://news.google.com/rss/articles/CBMi2wJBVV95cUxPSVdfTFk2YlFDcHlzZEhDeVVfV2RXUklYT09KcVpmUndVQmlockU3N3RkVHFObU1QOXowU2ZIU05DbVBhc1BpTDlKTHpXSkI4cDZRM0VmNUh5MVNJQ3VfUk5KOEhzUGdhWTBTNTVlbDdjOF9FVkI3MzNBUVc3RmwzdE9SWjN2TlItNVBkdE9qUy1MZlVhQmdnaVM5NklaZlkwTUxQOWg1U0dGZTJ4bHByaVU3Q0JqaXZmeUg2d2k5V3l0aU8tQ0IxUUF0S1VqbUtqbGF0Z1QxNVZvSUYyY1NwVlVZRkprTDJjX2x3QlpmNlU0Y1NlX25oc0lmQ0xnMV9WekhNbjVPNHV6cE03Nk9Qc0RTWldnVVVGVFcxWWUtZ0FNSEw4ZTN3T25lYVB3ZWdKUDRXOVFRa0I1bV9zbE5mb2xZbXJRRk90SHk4SC1taGxWejA1bVJnX2Y4ONIB4AJBVV95cUxOb1pIN29UZVhyeUZHeGpjdmppZ1JMX3BKT24tZWxvNlRsd0kxLVdsVk9ZVXFjd0JDbthrTlNaVkI0LUlNVHNKenp0QVdRTGhTTWFEVkp6bFBkeFJvTEl0ZWo3RC1pZk11SGN3bF9IWUI5ZktvWDhrMEpPMjVBVS1PXzJuS2RETVVzYko4Vjd4QUpUSzdFSUtsVm5MVmFuUGZidjk5Tl9PY0czOUc0TmxnYTVVOENXQmZvRUFnYjRsaXZWelNHODZaalBLdmhmSTFXR3g1VkMwN2xGUlZVVzRtUmszMU1FLUtadEtNdWo3aTVWT0dhTUJXX25IekxVMFE2cmpRMUJCVXNZS19FTURrVW1BbTZ0MnFwWnZnUUxMcmd0aDFZSmFESWxDUG81RDlJbmg5TDhYTExxT0xXRWxoN3BKczdlUkZrNG42YlBUcDk4dnhEYUlwR0JiSGE2WWt4?oc=5)
+- Xbox 하드웨어 판매가 32% 감소함에 따라 Microsoft는 클라우드 및 디지털 구독을 우선시하고 있습니다. (https://news.google.com/rss/articles/CBMi1wJBVV95cUxNaENXeTZIcWFBY0JfMW90NEM2a3pyTEs3Tm5XTWpVVWVQUldyVXNvUWstQ3BGVGx4c1dVTmx1N2JBWHJaUlRGanBGTVBtVFlncXhiaVRzdll2d1RnaF9kd3RjUDdNZVM1WDRNZXZEbnExYU43bWlEOWtXSGI4aExnbFZ6RzNfVUdHcVZadmlvXzR5VzQ3TG9IMlNvbEdLTTlSaHpfeXpOYWRYZ3pwUDM3Ujl0amMweDR6SHZaUkVIRXJLS2czcVV4b29fM2I0VGNreXR2ZFVVUnBaczBNNDVNQjFhWll0NG5LakpMcGlLd2dpbXVQcW5wTnJKVUM2T1JVVGczYUJNT3FPQW9ZVkttUVpqcURSWTVKV2ZzbTZhaTdPMnZwZk1VVnZPYmh3dkxIeUFPcWdKSldnZUthSC1ablNyUGVLWTRHVnNoMmFPMFhnRFdzUnVV0gHcAkFVX3lxTE14cHd0YkhHQUk2djdteTQ2ZTJ6Zlk5QUFazS1ZaUdObmVIZ1BMcFVyeEVZLUU3YlY3Zk01clhLSzZsMEdRa3J2TFV1UVZVZ0o3NjltLS11bVAxWk5HWF8zTHc1Q01fd1ZNNmdReWtwbVVRYTJraF9fSlVHNTFfRkpTS05LeFpWc0RPTXVxUkJycHo3WDRJdTVqTnRUNzRCcWJDNEt5THhEcEN6VjF0Z2ZkczBCWmI3TnBaMFRXNUZxbmtaQmxGbTZlbFFtTU9uc2ljblZWNDlnb1pQb3o4ckF6UnMxeVI0cGd3ODd3Y1VGbGpDbXBoT1BrMEh4UjJKU2x2SzRwU25DY1dpTWpOT2owdVlKcVlIQ1hyOE1PNVhTaTBILS1ocVpEMV9yeFpjVzlfMHJnVjZVX19aUFJkcEZCc2xMWUJOdnQ5TmlldjRNYldhYmRwb200RVFqSA?oc=5)
+
+==============================
+
+🔍 [TSLA] 뉴스 검색 중... (Type: US_STOCK)
+   👉 Query: TSLA OR "Tesla"
+   🔻 필터링: 5건 제외
+   ✅ Google News RSS 폴백 수집 완료 (5건)
+🧠 [TSLA] Gemini가 뉴스를 분석 및 요약 중...
+
+━━━━━━━━━━
+📊 <b>Tesla, Inc. (TSLA)</b>
+💰 Price: 402.51 USD (1D: -1.49%, 1M: -6.71%, 3M: -4.03%, 6M: +15.13%, 1Y: +38.41%)
+
+- 테슬라의 로보택시 사업은 법적 분쟁에 직면하여 성장 및 실행 능력에 대한 의문을 제기하고 있습니다. https://finance.yahoo.com/news/tesla-robotaxi-legal-battles-sharpen-190919467.html
+- 테슬라의 FSD 모드가 2억 4천만 달러의 오토파일럿 책임 판결 이후 "기본적으로 안전하지 않다"는 경고가 나왔습니다. https://finance.yahoo.com/news/ross-gerber-warns-teslas-mad-183106788.html
+- 테슬라 모델 Y의 7인승 버전이 독일 현지 생산을 통해 유럽 시장에 출시됩니다. https://news.google.com/rss/articles/CBMi1AJBVV95cUxNWnBYSWVVZVhyVHVLX0F2OWIzS3FuM3NZTzNHSjRzdHpJejB1VFNkd2VWREdCS1VjYWZRbmhKNEx4TmpyY0JxY3RuZzRGTXpoRWZxTXgxa2lZVTlTU0FPdUNyU1lFWHRfdkVuMUMxaEk5SDctMmdlcHhUMDNCV0ZiQ1dUREJTYWdwRS12T2JRRENmVW82Umg2OEhYb0Y0NlYyMTRDeHJQOV9KZ0d5UGItV2tOcDlMMDdEYkNtWDZ0RUpYRDhHZFFKdFVUSjlvS2xMOS1xVEdzd1dkU1RGV3VPdGdRWk5TdmF1cDJyWDF5RmVQdzNENzN5QzhoaTBwU3A2ay1jVHRpbENCMDAwQ0wyQXdObXU0emxKdUpnVjJXdEUwVEg0a1FiZzRPSnFZbmNVR2pISEwwVlBvS3U5MTB5Y1A5cHBvOUVKY3VBYjlCOGgyYko1?oc=5
+
+==============================
+
+🔍 [AAPL] 뉴스 검색 중... (Type: US_STOCK)
+   👉 Query: AAPL OR "Apple"
+   🔻 필터링: 5건 제외
+🧠 [AAPL] Gemini가 뉴스를 분석 및 요약 중...
+
+━━━━━━━━━━
+📊 <b>Apple Inc. (AAPL)</b>
+💰 Price: 264.18 USD (1D: -3.21%, 1M: +3.11%, 3M: -4.53%, 6M: +14.84%, 1Y: +10.39%)
+
+- 버크셔 해서웨이의 그렉 아벨은 애플이 수십 년에 걸쳐 복리 성장을 할 것으로 기대한다고 밝혔다. https://finance.yahoo.com/news/berkshire-hathaways-greg-abel-says-005100330.html
+- 이번 주 주식 시장의 주요 이벤트 중 하나로 애플 행사가 언급되었다. https://www.investors.com/research/investing-action-plan/stock-market-week-reaction-to-iran-berkshire-earnings-apple-event/?src=A00220&yptr=yahoo
+
+==============================
+
+🔍 [AVGO] 뉴스 검색 중... (Type: US_STOCK)
+   👉 Query: AVGO OR "Broadcom"
+   🔻 필터링: 5건 제외
+🧠 [AVGO] Gemini가 뉴스를 분석 및 요약 중...
+
+━━━━━━━━━━
+📊 <b>Broadcom Inc. (AVGO)</b>
+💰 Price: 319.55 USD (1D: -0.67%, 1M: -4.11%, 3M: -16.85%, 6M: +6.81%, 1Y: +51.42%)
+
+- Broadcom은 최근 칩 이정표를 달성했다. https://finance.yahoo.com/news/broadcom-chip-milestones-meet-recent-121049233.html
+- Broadcom의 주가는 최근 하락세를 보였으며, 높은 가치로 평가되고 있다. https://finance.yahoo.com/news/broadcom-chip-milestones-meet-recent-121049233.html
+- Broadcom의 실적 발표가 다음 주에 예정되어 있다. https://www.wsj.com/livecoverage/stock-market-today-dow-sp-500-nasdaq-02-27-2026/card/jobs-data-earnings-from-broadcom-and-target-what-to-watch-next-week-dfXcvWg5MeC8syzOG3yE?siteid=yhoof2&yptr=yahoo
+
+==============================
+
+🧠 전체 시장 인사이트 도출 중...
+
+
+=== 텔레그램 전송 예정 메시지 (총 3개 부분) ===
+--- Part 1 ---
+📈 AssetBrief 데일리 브리핑 (🇺🇸 미국 주식)
+2026-03-01
+
+[💡 오늘의 핵심 인사이트]
+현재 글로벌 증시는 1,440원에 육박하는 강달러 기조로 인한 매크로 유동성 압박과 나스닥의 단기 하락 추세(-5.0% 1M)가 맞물리며, 과열된 모멘텀에서 벗어나 질적 펀더멘탈로 자본이 회귀하는 전형적인 옥석 가리기 장세를 전개하고 있습니다. 버크셔 해서웨이가 막대한 현금을 비축하며 보수적 자본 배치를 유지하는 것은 시장 전반의 밸류에이션 부담을 방증하지만, 모건스탠리의 시각이나 구글의 로보틱스 확장처럼 AI 인프라 기반의 구조적 이익 성장이 담보된 영역은 단기적 추세 이탈을 오히려 장기 가치투자의 진입 기회로 해석해야 합니다. 따라서 하드웨어 수요 둔화와 규제 리스크로 하락 모멘텀이 짙어진 마이크로소프트나 테슬라에 대한 섣부른 저점 매수는 철저히 경계하되, 확고한 대차대조표와 복리 성장성을 갖춘 우량 자산(애플, AI 핵심주)이 기술적 조정을 거치며 본질 가치에 수렴하는 최적의 지점을 노려 비중을 확대하는 전략을 권고합니다.
+
+━━━━━━━━━━━━━━━
+[📊 시장 지표]
+• S&P 500: 6,878.88 (1D: -0.4%, 1M: -1.4%, 3M: +1.7%, 1Y: +15.5%)
+• Nasdaq: 22,668.21 (1D: -0.9%, 1M: -5.0%, 3M: -1.6%, 1Y: +18.8%)
+• Dow Jones: 48,977.92 (1D: -1.1%, 1M: -0.1%, 3M: +4.0%, 1Y: +12.8%)
+• USD/KRW: 1,439.2 (1D: +0.5%, 1M: +0.7%, 3M: -1.8%, 1Y: -0.5%)
+
+━━━━━━━━━━
+📊 Berkshire Hathaway Inc. New (BRK-B)
+💰 Price: 504.95 USD (1D: +0.45%, 1M: +6.64%, 3M: -0.71%, 6M: +1.86%, 1Y: +2.20%)
+
+- Berkshire Hathaway의 신임 CEO 그렉 아벨은 첫 연례 서한에서 워렌 버핏의 규율 있는 투자 문화를 지속하고 "요새와 같은" 대차대조표를 유지하며, 기록적인 현금 보유액을 서둘러 배치하거나 배당금을 지급할 계획이 없다고 밝혔다. https://www.reuters.com/sustainability/boards-policy-regulation/berkshire-hathaway-profit-falls-writedowns-lower-insurance-income-2026-02-28/
+- Berkshire Hathaway의 4분기 영업 이익은 보험 사업 부문의 수입 감소와 Occidental Petroleum 투자에 대한 감액 상각을 반영하여 30% 감소했다. https://finance.yahoo.com/news/berkshire-hathaways-earnings-stock-price-2020a5d3?siteid=yhoof2&yptr=yahoo
+- 4분기 동안 주식 자사주 매입은 이루어지지 않았다. https://finance.yahoo.com/news/berkshire-hathaways-earnings-stock-price-2020a5d3?siteid=yhoof2&yptr=yahoo
+
+━━━━━━━━━━
+📊 Alphabet Inc. (GOOGL)
+💰 Price: 311.76 USD (1D: +1.42%, 1M: -7.22%, 3M: -3.55%, 6M: +50.49%, 1Y: +81.20%)
+
+- 애널리스트들은 구글의 AI 관련 움직임을 고려하여 구글을 상향 조정했다. https://finance.yahoo.com/news/5-big-analyst-ai-moves-093003047.html
+- 알파벳의 청정에너지 투자는 데이터센터 전력 공급 방식과 기업 가치 평가에 영향을 미치고 있다. https://finance.yahoo.com/news/alphabet-clean-energy-bet-reshapes-221409077.html
+- 구글은 로봇 소프트웨어 프로젝트인 Intrinsic을 'Other Bets'에서 본사로 편입시키며, 로봇 분야에서 안드로이드와 같은 전략을 추진하고 있다. https://www.cnbc.com/2026/02/28/google-wants-intrinsic-to-be-android-for-robots-moves-into-physical-ai.html
+--- Part 2 ---
+━━━━━━━━━━
+📊 Microsoft Corporation (MSFT)
+💰 Price: 392.74 USD (1D: -2.24%, 1M: -18.27%, 3M: -17.47%, 6M: -22.17%, 1Y: -1.00%)
+
+- OpenAI와 Microsoft는 공동 성명을 발표했습니다. (https://news.google.com/rss/articles/CBMickFVX3lxTE5YS1NVY0FVWXB6ZVdtdW5Fc2tJTjYxS3p6ZzNuVGN5QUtzZkQyVl9wbDZvY3BSYmU2Y3d3WGJJbVFWaUFhM0RRc3ozTm9ydGpqajYzV01raVp3YV8yLW9ad1NsdWtTWjZOV1Y5R0txS2VCdw?oc=5)
+- Microsoft 게임 사업부의 재무 결과는 수익 감소 및 자산 조정의 영향을 받았습니다. (https://news.google.com/rss/articles/CBMi2wJBVV95cUxPSVdfTFk2YlFDcHlzZEhDeVVfV2RXUklYT09KcVpmUndVQmlockU3N3RkVHFObU1QOXowU2ZIU05DbVBhc1BpTDlKTHpXSkI4cDZRM0VmNUh5MVNJQ3VfUk5KOEhzUGdhWTBTNTVlbDdjOF9FVkI3MzNBUVc3RmwzdE9SWjN2TlItNVBkdE9qUy1MZlVhQmdnaVM5NklaZlkwTUxQOWg1U0dGZTJ4bHByaVU3Q0JqaXZmeUg2d2k5V3l0aU8tQ0IxUUF0S1VqbUtqbGF0Z1QxNVZvSUYyY1NwVlVZRkprTDJjX2x3QlpmNlU0Y1NlX25oc0lmQ0xnMV9WekhNbjVPNHV6cE03Nk9Qc0RTWldnVVVGVFcxWWUtZ0FNSEw4ZTN3T25lYVB3ZWdKUDRXOVFRa0I1bV9zbE5mb2xZbXJRRk90SHk4SC1taGxWejA1bVJnX2Y4ONIB4AJBVV95cUxOb1pIN29UZVhyeUZHeGpjdmppZ1JMX3BKT24tZWxvNlRsd0kxLVdsVk9ZVXFjd0JDbthrTlNaVkI0LUlNVHNKenp0QVdRTGhTTWFEVkp6bFBkeFJvTEl0ZWo3RC1pZk11SGN3bF9IWUI5ZktvWDhrMEpPMjVBVS1PXzJuS2RETVVzYko4Vjd4QUpUSzdFSUtsVm5MVmFuUGZidjk5Tl9PY0czOUc0TmxnYTVVOENXQmZvRUFnYjRsaXZWelNHODZaalBLdmhmSTFXR3g1VkMwN2xGUlZVVzRtUmszMU1FLUtadEtNdWo3aTVWT0dhTUJXX25IekxVMFE2cmpRMUJCVXNZS19FTURrVW1BbTZ0MnFwWnZnUUxMcmd0aDFZSmFESWxDUG81RDlJbmg5TDhYTExxT0xXRWxoN3BKczdlUkZrNG42YlBUcDk4dnhEYUlwR0JiSGE2WWt4?oc=5)
+- Xbox 하드웨어 판매가 32% 감소함에 따라 Microsoft는 클라우드 및 디지털 구독을 우선시하고 있습니다. (https://news.google.com/rss/articles/CBMi1wJBVV95cUxNaENXeTZIcWFBY0JfMW90NEM2a3pyTEs3Tm5XTWpVVWVQUldyVXNvUWstQ3BGVGx4c1dVTmx1N2JBWHJaUlRGanBGTVBtVFlncXhiaVRzdll2d1RnaF9kd3RjUDdNZVM1WDRNZXZEbnExYU43bWlEOWtXSGI4aExnbFZ6RzNfVUdHcVZadmlvXzR5VzQ3TG9IMlNvbEdLTTlSaHpfeXpOYWRYZ3pwUDM3Ujl0amMweDR6SHZaUkVIRXJLS2czcVV4b29fM2I0VGNreXR2ZFVVUnBaczBNNDVNQjFhWll0NG5LakpMcGlLd2dpbXVQcW5wTnJKVUM2T1JVVGczYUJNT3FPQW9ZVkttUVpqcURSWTVKV2ZzbTZhaTdPMnZwZk1VVnZPYmh3dkxIeUFPcWdKSldnZUthSC1ablNyUGVLWTRHVnNoMmFPMFhnRFdzUnVV0gHcAkFVX3lxTE14cHd0YkhHQUk2djdteTQ2ZTJ6Zlk5QUFazS1ZaUdObmVIZ1BMcFVyeEVZLUU3YlY3Zk01clhLSzZsMEdRa3J2TFV1UVZVZ0o3NjltLS11bVAxWk5HWF8zTHc1Q01fd1ZNNmdReWtwbVVRYTJraF9fSlVHNTFfRkpTS05LeFpWc0RPTXVxUkJycHo3WDRJdTVqTnRUNzRCcWJDNEt5THhEcEN6VjF0Z2ZkczBCWmI3TnBaMFRXNUZxbmtaQmxGbTZlbFFtTU9uc2ljblZWNDlnb1pQb3o4ckF6UnMxeVI0cGd3ODd3Y1VGbGpDbXBoT1BrMEh4UjJKU2x2SzRwU25DY1dpTWpOT2owdVlKcVlIQ1hyOE1PNVhTaTBILS1ocVpEMV9yeFpjVzlfMHJnVjZVX19aUFJkcEZCc2xMWUJOdnQ5TmlldjRNYldhYmRwb200RVFqSA?oc=5)
+
+━━━━━━━━━━
+📊 Tesla, Inc. (TSLA)
+💰 Price: 402.51 USD (1D: -1.49%, 1M: -6.71%, 3M: -4.03%, 6M: +15.13%, 1Y: +38.41%)
+
+- 테슬라의 로보택시 사업은 법적 분쟁에 직면하여 성장 및 실행 능력에 대한 의문을 제기하고 있습니다. https://finance.yahoo.com/news/tesla-robotaxi-legal-battles-sharpen-190919467.html
+- 테슬라의 FSD 모드가 2억 4천만 달러의 오토파일럿 책임 판결 이후 "기본적으로 안전하지 않다"는 경고가 나왔습니다. https://finance.yahoo.com/news/ross-gerber-warns-teslas-mad-183106788.html
+- 테슬라 모델 Y의 7인승 버전이 독일 현지 생산을 통해 유럽 시장에 출시됩니다. https://news.google.com/rss/articles/CBMi1AJBVV95cUxNWnBYSWVVZVhyVHVLX0F2OWIzS3FuM3NZTzNHSjRzdHpJejB1VFNkd2VWREdCS1VjYWZRbmhKNEx4TmpyY0JxY3RuZzRGTXpoRWZxTXgxa2lZVTlTU0FPdUNyU1lFWHRfdkVuMUMxaEk5SDctMmdlcHhUMDNCV0ZiQ1dUREJTYWdwRS12T2JRRENmVW82Umg2OEhYb0Y0NlYyMTRDeHJQOV9KZ0d5UGItV2tOcDlMMDdEYkNtWDZ0RUpYRDhHZFFKdFVUSjlvS2xMOS1xVEdzd1dkU1RGV3VPdGdRWk5TdmF1cDJyWDF5RmVQdzNENzN5QzhoaTBwU3A2ay1jVHRpbENCMDAwQ0wyQXdObXU0emxKdUpnVjJXdEUwVEg0a1FiZzRPSnFZbmNVR2pISEwwVlBvS3U5MTB5Y1A5cHBvOUVKY3VBYjlCOGgyYko1?oc=5
+
+━━━━━━━━━━
+📊 Apple Inc. (AAPL)
+💰 Price: 264.18 USD (1D: -3.21%, 1M: +3.11%, 3M: -4.53%, 6M: +14.84%, 1Y: +10.39%)
+
+- 버크셔 해서웨이의 그렉 아벨은 애플이 수십 년에 걸쳐 복리 성장을 할 것으로 기대한다고 밝혔다. https://finance.yahoo.com/news/berkshire-hathaways-greg-abel-says-005100330.html
+- 이번 주 주식 시장의 주요 이벤트 중 하나로 애플 행사가 언급되었다. https://www.investors.com/research/investing-action-plan/stock-market-week-reaction-to-iran-berkshire-earnings-apple-event/?src=A00220&yptr=yahoo
+--- Part 3 ---
+━━━━━━━━━━
+📊 Broadcom Inc. (AVGO)
+💰 Price: 319.55 USD (1D: -0.67%, 1M: -4.11%, 3M: -16.85%, 6M: +6.81%, 1Y: +51.42%)
+
+- Broadcom은 최근 칩 이정표를 달성했다. https://finance.yahoo.com/news/broadcom-chip-milestones-meet-recent-121049233.html
+- Broadcom의 주가는 최근 하락세를 보였으며, 높은 가치로 평가되고 있다. https://finance.yahoo.com/news/broadcom-chip-milestones-meet-recent-121049233.html
+- Broadcom의 실적 발표가 다음 주에 예정되어 있다. https://www.wsj.com/livecoverage/stock-market-today-dow-sp-500-nasdaq-02-27-2026/card/jobs-data-earnings-from-broadcom-and-target-what-to-watch-next-week-dfXcvWg5MeC8syzOG3yE?siteid=yhoof2&yptr=yahoo
+=================================
+
+📤 텔레그램 전송 [1/3] 완료
+📤 텔레그램 전송 [2/3] 완료
+📤 텔레그램 전송 [3/3] 완료

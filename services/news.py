@@ -422,3 +422,31 @@ def get_asset_news(ticker: str, name: str) -> str:
         news_text = "⚠️ 수집된 뉴스가 없습니다."
 
     return news_text
+
+def get_market_news(market: str = "all") -> str:
+    """전반적인 시장 뉴스(시황)를 수집합니다."""
+    queries = []
+    if market == "us":
+        queries.append("US Stock Market Today")
+    elif market == "kr":
+        queries.append("국내 증시 시황 전망")
+    else:
+        queries.append("Global Stock Market News")
+        queries.append("국내 증시 시황")
+
+    news_text = ""
+    for query in queries:
+        print(f"🌍 시장 뉴스 검색 중: {query}")
+        # Tavily (1 credit)
+        results = _search_tavily(query, include_domains=None, max_results=7, days=1)
+        
+        # Fallback to Google News if empty
+        if not results:
+            results = fetch_google_news(query, max_results=7, days=1)
+            
+        for idx, r in enumerate(results):
+            news_text += f"\n- {r['title']}\n  Content: {r['content'][:200]}...\n"
+            if r.get('url'):
+                news_text += f"  Source: {r['url']}\n"
+    
+    return news_text

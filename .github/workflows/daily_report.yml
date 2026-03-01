@@ -2,24 +2,24 @@ name: Daily AssetBrief
 
 on:
   schedule:
-    # 🇺🇸 미국 주식: KST 09:07 = UTC 00:07 (전일 미국 시장 마감 후 뉴스 정리)
-    - cron: '07 0 * * 2-6'   # 월~금 (한국 화~토 오전 9시 7분)
-    # 🇰🇷 한국 주식: KST 16:13 = UTC 07:13 (당일 한국 시장 마감 직후)
-    - cron: '13 7 * * 1-5'   # 월~금 (한국 월~금 오후 4시 13분)
+    # 매일 한국 시간 오전 08:13 (UTC 23:13 prev day) - 아침 브리핑
+    - cron: '13 23 * * *'
+    # 매일 한국 시간 오후 18:13 (UTC 09:13) - 저녁 브리핑
+    - cron: '13 9 * * *'
   workflow_dispatch:
     inputs:
       market:
-        description: '실행할 시장 (us / kr / all)'
-        required: false
+        description: 'Market to report (us/kr/all)'
+        required: true
         default: 'all'
 
 jobs:
-  us-briefing:
-    name: 🇺🇸 미국 주식 브리핑 (KST 09:07)
+  morning-briefing:
+    name: 🌅 아침 시장 브리핑 (KST 08:13)
     runs-on: ubuntu-latest
-    # 스케줄: US cron일 때만 / 수동: market이 us 또는 all일 때만
+    # 스케줄: Morning cron일 때만 / 수동: market이 us 또는 all일 때만
     if: >-
-      github.event.schedule == '07 0 * * 2-6' ||
+      github.event.schedule == '13 23 * * *' ||
       (github.event_name == 'workflow_dispatch' &&
        (github.event.inputs.market == 'us' || github.event.inputs.market == 'all'))
 
@@ -37,20 +37,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run US Briefing
+      - name: Run Global Briefing (Morning)
         env:
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_SECRET_KEY: ${{ secrets.NAVER_SECRET_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python main.py --market us
+        run: python main.py --market all
 
-  kr-briefing:
-    name: 🇰🇷 한국 주식 브리핑 (KST 16:13)
+  evening-briefing:
+    name: 🌇 저녁 시장 브리핑 (KST 18:13)
     runs-on: ubuntu-latest
-    # 스케줄: KR cron일 때만 / 수동: market이 kr 또는 all일 때만
+    # 스케줄: Evening cron일 때만 / 수동: market이 kr 또는 all일 때만
     if: >-
-      github.event.schedule == '13 7 * * 1-5' ||
+      github.event.schedule == '13 9 * * *' ||
       (github.event_name == 'workflow_dispatch' &&
        (github.event.inputs.market == 'kr' || github.event.inputs.market == 'all'))
 
@@ -68,7 +70,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run KR Briefing
+      - name: Run Global Briefing (KR Post-Market)
         env:
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
@@ -76,4 +78,4 @@ jobs:
           NAVER_SECRET_KEY: ${{ secrets.NAVER_SECRET_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python main.py --market kr
+        run: python main.py --market all
