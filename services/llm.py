@@ -54,6 +54,19 @@ def generate_global_insight(market_status: str, market_news: str, ticker_briefs:
     model_name = 'gemini-3.1-pro-preview'
     print(f"🧠 전체 시장 인사이트 도출 중... ({model_name} 사용)\n")
     
+    prompt = f"""
+    [오늘의 시장 데이터]
+    {market_status}
+
+    [주요 시황 뉴스]
+    {market_news}
+
+    [개별 종목 브리핑 요약]
+    {ticker_briefs}
+    
+    위 데이터를 바탕으로 가치투자(70%)와 추세추종(30%)을 결합한 하이브리드 투자 관점에서의 오늘의 인사이트를 작성해줘.
+    """
+    
     try:
         # 60초 타임아웃 설정하여 무한 대기 방지
         response = gemini_client.models.generate_content(
