@@ -24,12 +24,21 @@ async def main(market: str = "all"):
 
     # ── 종목 정의 ──
     US_TICKERS = [
+        "BRK-B",   # Berkshire Hathaway Class B
+        "GOOGL",   # Alphabet Class A
+        "MSFT",    # Microsoft
+        "TSLA",    # Tesla
         "AAPL",    # Apple
-        # "BRK-B", "GOOGL", "MSFT", "TSLA", "AVGO"
+        "AVGO",    # Broadcom
     ]
     KR_TICKERS = [
+        "003230.KS",  # 삼양식품
+        "009540.KS",  # HD한국조선해양
+        "352820.KS",  # 하이브
         "000660.KS",  # SK하이닉스
-        # "003230.KS", "009540.KS", "352820.KS", "138040.KS", "298040.KS", "017670.KS"
+        "138040.KS",  # 메리츠금융지주
+        "298040.KS",  # 효성중공업
+        "017670.KS",  # SK텔레콤
     ]
 
     if market == "us":
