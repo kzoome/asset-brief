@@ -62,8 +62,9 @@ KR_GLOBAL_QUERY_MAP = {
 }
 
 
-def _get_yfinance_news(ticker: str, max_items: int = 5) -> str:
-    """yfinance를 이용해 Yahoo Finance가 큐레이팅한 뉴스를 가져옵니다."""
+def _get_yfinance_news(ticker: str, max_items: int = 5, days: int = 2) -> str:
+    """yfinance를 이용해 Yahoo Finance가 큐레이팅한 뉴스를 가져옵니다.
+    days 이내의 최신 기사만 포함합니다."""
     try:
         obj = yf.Ticker(ticker)
         news_items = obj.news or []
@@ -79,19 +80,33 @@ def _get_yfinance_news(ticker: str, max_items: int = 5) -> str:
             if len(clean) >= 3:  # 짧은 단어(Inc, Co 등) 제외
                 keywords.append(clean)
 
+        cutoff = datetime.now() - timedelta(days=days)
+
         news_text = ""
         count = 0
+        skipped_old = 0
         for item in news_items:
             # yfinance 최신 API 구조 (item['content'] 내부에 데이터 존재) 및 구형 구조 모두 대응
             content_dict = item.get("content", item) if isinstance(item.get("content"), dict) else item
-            
+
             title = content_dict.get("title", item.get("title", ""))
-            
+
+            # 날짜 필터링: pubDate가 있으면 cutoff 이전 기사 제외
+            pub_date_str = content_dict.get("pubDate", "") or content_dict.get("displayTime", "") or item.get("pubDate", "")
+            if pub_date_str:
+                try:
+                    pub_dt = datetime.fromisoformat(pub_date_str.replace("Z", "+00:00")).replace(tzinfo=None)
+                    if pub_dt < cutoff:
+                        skipped_old += 1
+                        continue
+                except (ValueError, TypeError):
+                    pass
+
             provider = content_dict.get("provider", {})
             if not isinstance(provider, dict):
                 provider = {}
             publisher = provider.get("displayName", item.get("publisher", ""))
-            
+
             link = ""
             click_through = content_dict.get("clickThroughUrl", {})
             if isinstance(click_through, dict):
@@ -100,7 +115,7 @@ def _get_yfinance_news(ticker: str, max_items: int = 5) -> str:
                 link = content_dict.get("canonicalUrl", {}).get("url", "") if isinstance(content_dict.get("canonicalUrl"), dict) else ""
             if not link:
                 link = item.get("link", "")
-                
+
             if not title:
                 continue
 
@@ -118,6 +133,10 @@ def _get_yfinance_news(ticker: str, max_items: int = 5) -> str:
             count += 1
             if count >= max_items:
                 break
+
+        if skipped_old > 0:
+            print(f"   🗓️ yfinance 오래된 기사 {skipped_old}건 제외 ({days}일 기준)")
+
         return news_text
     except Exception as e:
         print(f"   ⚠️ yfinance 뉴스 수집 실패 ({ticker}): {e}")

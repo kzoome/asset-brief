@@ -81,6 +81,41 @@ def get_market_data(ticker: str) -> str:
         print(f"⚠️ Market Data Error ({ticker}): {e}")
         return ""
 
+def get_upcoming_events(ticker: str, days_ahead: int = 7) -> str:
+    """향후 days_ahead일 이내의 실적발표·배당 일정을 확인하여 경고 문자열을 반환합니다."""
+    try:
+        obj = yf.Ticker(ticker)
+        cal = obj.calendar
+        if not cal:
+            return ""
+    except Exception:
+        return ""
+
+    from datetime import date, timedelta
+    today = date.today()
+    cutoff = today + timedelta(days=days_ahead)
+    alerts = []
+
+    # 실적발표일 체크
+    earnings_dates = cal.get("Earnings Date", [])
+    if not isinstance(earnings_dates, list):
+        earnings_dates = [earnings_dates]
+    for ed in earnings_dates:
+        if isinstance(ed, date) and today <= ed <= cutoff:
+            d_day = (ed - today).days
+            label = "D-day" if d_day == 0 else f"D-{d_day}"
+            alerts.append(f"⚠️ 실적발표 {label} ({ed.strftime('%m/%d')})")
+
+    # 배당락일 체크
+    ex_div = cal.get("Ex-Dividend Date")
+    if isinstance(ex_div, date) and today <= ex_div <= cutoff:
+        d_day = (ex_div - today).days
+        label = "D-day" if d_day == 0 else f"D-{d_day}"
+        alerts.append(f"💰 배당락일 {label} ({ex_div.strftime('%m/%d')})")
+
+    return "\n".join(alerts)
+
+
 def get_global_market_status(market: str = "all") -> str:
     """주요 시장 지수 및 환율 정보를 가져옵니다 (다기간 변동률 포함)."""
     indices = []

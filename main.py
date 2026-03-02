@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 환경변수 로드 완료 후 모듈 임포트
-from utils.market import get_ticker_name_kr, get_market_data, get_global_market_status
+from utils.market import get_ticker_name_kr, get_market_data, get_global_market_status, get_upcoming_events
 from services.news import get_asset_news, get_market_news
 from services.llm import summarize_news, generate_global_insight, extract_core_trend
 from services.notifier import send_telegram_message
@@ -76,9 +76,13 @@ async def main(market: str = "all"):
             # 3-1. 핵심 트렌드 1문장 초고속 추출
             core_trend = await extract_core_trend(ticker, briefing)
             
+            # 3-2. 실적발표/배당 캘린더 경고
+            events = get_upcoming_events(ticker)
+
             # 4. 결과 출력
             trend_prefix = f"<b>{core_trend}</b>\n\n" if core_trend else ""
-            result_msg = f"━━━━━━━━━━\n📊 <b>{name} ({ticker})</b>\n{market_data}\n\n{trend_prefix}{briefing}"
+            events_line = f"\n{events}" if events else ""
+            result_msg = f"━━━━━━━━━━\n📊 <b>{name} ({ticker})</b>\n{market_data}{events_line}\n\n{trend_prefix}{briefing}"
             print(result_msg)
             print("\n" + "="*30 + "\n")
 
