@@ -70,6 +70,63 @@ async def extract_core_trend(ticker: str, brief: str) -> str:
         print(f"⚠️ [{ticker}] 트렌드 추출 오류: {e}")
         return ""
 
+async def extract_etf_queries(ticker: str, name: str, is_kr: bool) -> dict:
+    """ETF의 테마/섹터를 파악하여 뉴스 검색 키워드를 생성합니다.
+
+    Returns:
+        {"english_query": str, "korean_query": str | None}
+        실패 시 ticker/name 기반 기본값 반환.
+    """
+    gemini_client = get_gemini_client()
+    fallback = {
+        "english_query": f"{ticker} ETF",
+        "korean_query": name if is_kr else None,
+    }
+    if not gemini_client:
+        return fallback
+
+    kr_note = (
+        "이 ETF는 한국 거래소에 상장된 ETF입니다. korean_query도 반드시 작성하세요."
+        if is_kr else
+        "이 ETF는 미국 거래소에 상장된 ETF입니다. korean_query는 null로 하세요."
+    )
+
+    prompt = f"""ETF 이름: {name}
+티커: {ticker}
+{kr_note}
+
+이 ETF가 추종하는 테마, 섹터, 또는 자산군을 파악하고, 관련 최신 뉴스를 검색하기에 가장 적합한 키워드를 만들어줘.
+ETF 자체 이름/티커가 아닌, ETF가 담고 있는 산업·테마에 관한 뉴스를 찾을 수 있는 검색어여야 해.
+
+다음 JSON 형식으로만 응답해:
+{{
+  "english_query": "영문 검색어 (테마/섹터 중심)",
+  "korean_query": "한국어 검색어 또는 null"
+}}"""
+
+    try:
+        response = await gemini_client.aio.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(temperature=0.1),
+        )
+        import json, re
+        text = response.text.strip()
+        # 코드블록 제거
+        text = re.sub(r'^```(?:json)?\s*', '', text)
+        text = re.sub(r'\s*```$', '', text)
+        parsed = json.loads(text)
+        result = {
+            "english_query": parsed.get("english_query") or fallback["english_query"],
+            "korean_query":  parsed.get("korean_query") or None,
+        }
+        print(f"   🏷️ ETF 검색어: EN='{result['english_query']}' / KR='{result['korean_query']}'")
+        return result
+    except Exception as e:
+        print(f"   ⚠️ ETF 쿼리 추출 실패 ({ticker}): {e}")
+        return fallback
+
+
 async def generate_global_insight(market_status: str, market_news: str) -> str:
     """시장 지수 및 시황 뉴스를 종합하여 글로벌 매크로 인사이트를 도출합니다."""
     gemini_client = get_gemini_client()

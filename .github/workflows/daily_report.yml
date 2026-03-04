@@ -2,10 +2,10 @@ name: Daily AssetBrief
 
 on:
   schedule:
-    # 매일 한국 시간 오전 08:13 (UTC 23:13 prev day) - 아침 브리핑
-    - cron: '13 23 * * *'
-    # 매일 한국 시간 오후 18:13 (UTC 09:13) - 저녁 브리핑
-    - cron: '13 9 * * *'
+    # 매일 한국 시간 오전 07:33 (UTC 22:33 prev day) - 아침 브리핑
+    - cron: '33 22 * * *'
+    # 매일 한국 시간 오후 17:33 (UTC 08:33) - 저녁 브리핑
+    - cron: '33 8 * * *'
   workflow_dispatch:
     inputs:
       market:
@@ -31,6 +31,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Write service account key
+        run: echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' > /tmp/service_account.json
+
       - name: Run Global Briefing
         env:
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
@@ -40,4 +43,6 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           DART_API_KEY: ${{ secrets.DART_API_KEY }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_FILE: /tmp/service_account.json
         run: python main.py --market ${{ github.event.inputs.market || 'all' }}

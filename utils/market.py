@@ -6,6 +6,22 @@ def get_asset_type(ticker: str) -> str:
         return "KR_STOCK"
     return "US_STOCK"
 
+# 한국 ETF 브랜드 접두사
+_KR_ETF_PREFIXES = {
+    "TIGER", "KODEX", "ACE", "SOL", "KBSTAR", "HANARO", "ARIRANG",
+    "FOCUS", "TIMEFOLIO", "KOSEF", "SMART", "PLUS",
+}
+
+def is_etf(ticker: str, name: str) -> bool:
+    """종목명 또는 티커로 ETF 여부를 판별합니다."""
+    name_upper = name.upper()
+    if "ETF" in name_upper or " FUND" in name_upper:
+        return True
+    first_word = name.split()[0].upper() if name else ""
+    if first_word in _KR_ETF_PREFIXES:
+        return True
+    return False
+
 def get_ticker_name(ticker: str) -> str:
     """yfinance를 통해 종목명(shortName)을 가져옵니다."""
     try:
@@ -40,6 +56,20 @@ KR_TICKER_NAME_MAP = {
 def get_ticker_name_kr(ticker: str) -> str:
     """국내 종목의 한글명을 반환합니다. 매핑이 없으면 영문명을 반환합니다."""
     return KR_TICKER_NAME_MAP.get(ticker, get_ticker_name(ticker))
+
+def get_1d_change_pct(ticker: str) -> float:
+    """티커의 1일 변동률(%)을 float으로 반환합니다. 실패 시 0.0 반환."""
+    try:
+        obj = yf.Ticker(ticker)
+        hist = obj.history(period="5d")
+        if len(hist) < 2:
+            return 0.0
+        curr = hist['Close'].iloc[-1]
+        prev = hist['Close'].iloc[-2]
+        return ((curr - prev) / prev) * 100
+    except Exception:
+        return 0.0
+
 
 def get_market_data(ticker: str) -> str:
     """yfinance를 이용해 현재가 및 다기간 변동률 정보를 가져옵니다."""

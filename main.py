@@ -9,11 +9,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 환경변수 로드 완료 후 모듈 임포트
-from utils.market import get_ticker_name_kr, get_market_data, get_global_market_status, get_upcoming_events
+from utils.market import get_ticker_name_kr, get_market_data, get_global_market_status, get_upcoming_events, is_etf
 from services.news import get_asset_news, get_market_news
-from services.llm import summarize_news, generate_global_insight, extract_core_trend
+from services.llm import summarize_news, generate_global_insight, extract_core_trend, extract_etf_queries
 from services.notifier import send_telegram_message
 from services.dart import get_recent_disclosures
+from services.portfolio import load_portfolio, FALLBACK_PORTFOLIO
 
 async def main(market: str = "all"):
     print(f"=== 📈 AssetBrief 시작 (market={market}) ===\n")
@@ -22,48 +23,42 @@ async def main(market: str = "all"):
     market_status = get_global_market_status(market)
     market_news = get_market_news(market)
 
-    # ── 종목 정의 ──
-    US_TICKERS = [
-        "BRK-B",   # Berkshire Hathaway Class B
-        "GOOGL",   # Alphabet Class A
-        "MSFT",    # Microsoft
-        "TSLA",    # Tesla
-        "AAPL",    # Apple
-        "AVGO",    # Broadcom
-    ]
-    KR_TICKERS = [
-        "003230.KS",  # 삼양식품
-        "009540.KS",  # HD한국조선해양
-        "352820.KS",  # 하이브
-        "000660.KS",  # SK하이닉스
-        "138040.KS",  # 메리츠금융지주
-        "298040.KS",  # 효성중공업
-        "017670.KS",  # SK텔레콤
-    ]
+    # ── 포트폴리오 로드 (구글 시트 → 폴백) ──
+    portfolio = load_portfolio()
+
+    us_items = [p for p in portfolio if p["market"] == "us"]
+    kr_items = [p for p in portfolio if p["market"] == "kr"]
 
     if market == "us":
-        tickers = US_TICKERS
-        label = "🇺🇸 미국 주식"
+        items = us_items
+        label = "🇺🇸 해외 주식"
     elif market == "kr":
-        tickers = KR_TICKERS
-        label = "🇰🇷 한국 주식"
-    else:  # all
-        tickers = US_TICKERS + KR_TICKERS
+        items = kr_items
+        label = "🇰🇷 국내 주식"
+    else:  # all — 해외 먼저, 국내 나중에
+        items = us_items + kr_items
         label = "전체"
 
-    all_briefs = []  # 전체 브리핑 누적
+    scored_briefs = []  # (score, result_msg) 리스트
 
-    for ticker in tickers:
+    for item in items:
+        ticker = item["ticker"]
+        weight = item["weight"]
         try:
-            # 0. 종목명 추출
-            name = get_ticker_name_kr(ticker)
+            # 0. 종목명 추출 (포트폴리오 name 우선, 없으면 기존 매핑 사용)
+            name = item["name"] or get_ticker_name_kr(ticker)
 
             # 1. 뉴스 수집 (Retrieval)
-            news_data = get_asset_news(ticker, name)
-            
+            etf_q = None
+            if is_etf(ticker, name):
+                is_kr = ticker.endswith(".KS") or ticker.endswith(".KQ")
+                etf_q = await extract_etf_queries(ticker, name, is_kr)
+            news_data = get_asset_news(ticker, name, etf_queries=etf_q)
+
             # 2. 시장 데이터 수집 (Market Data)
             market_data = get_market_data(ticker)
-            
+            change_1d = item.get("change_1d", 0.0)  # 구글 시트에서 가져온 1d 변동률
+
             # 2.5 DART 공시 데이터 (KR_STOCK)
             if market == "kr" or ticker.endswith(".KS") or ticker.endswith(".KQ"):
                 dart_data = get_recent_disclosures(ticker, days=2)
@@ -72,24 +67,40 @@ async def main(market: str = "all"):
 
             # 3. 뉴스 요약 (Generation)
             briefing = await summarize_news(ticker, name, news_data)
-            
+
             # 3-1. 핵심 트렌드 1문장 초고속 추출
             core_trend = await extract_core_trend(ticker, briefing)
-            
+
             # 3-2. 실적발표/배당 캘린더 경고
             events = get_upcoming_events(ticker)
 
-            # 4. 결과 출력
+            # 4. 메시지 조립
             trend_prefix = f"<b>{core_trend}</b>\n\n" if core_trend else ""
             events_line = f"\n{events}" if events else ""
-            result_msg = f"━━━━━━━━━━\n📊 <b>{name} ({ticker})</b>\n{market_data}{events_line}\n\n{trend_prefix}{briefing}"
-            print(result_msg)
-            print("\n" + "="*30 + "\n")
+            impact_bp = weight * change_1d  # (%) × (%) = bp
+            weight_str = f" · 비중 {weight:.1f}%" if weight > 0 else ""
+            impact_str = f" ({impact_bp:+.1f}bp)" if weight > 0 and change_1d != 0 else ""
+            result_msg = f"━━━━━━━━━━\n📊 <b>{name} ({ticker})</b>{weight_str}{impact_str}\n{market_data}{events_line}\n\n{trend_prefix}{briefing}"
 
-            all_briefs.append(result_msg)
+            # 정렬 점수: 비중 × |1D 변동률| (비중 없을 경우 변동률만 사용)
+            score = (weight if weight > 0 else 1.0) * abs(change_1d)
+            scored_briefs.append((score, result_msg, item["market"]))
 
         except Exception as e:
             print(f"❌ [{ticker}] 에러가 발생했습니다: {e}\n")
+
+    # 해외 먼저 / 국내 나중에, 각 그룹 내 비중×|1d| 내림차순
+    def sort_key(x):
+        score, _, item_market = x
+        group = 0 if item_market == "us" else 1
+        return (group, -score)
+
+    scored_briefs.sort(key=sort_key)
+    all_briefs = [msg for _, msg, _ in scored_briefs]
+
+    for msg in all_briefs:
+        print(msg)
+        print("\n" + "=" * 30 + "\n")
 
     # ── 4. 전체 인사이트 도출 ──
     try:

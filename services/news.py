@@ -73,7 +73,11 @@ def _get_yfinance_news(ticker: str, max_items: int = 5, days: int = 2) -> str:
 
         # 티커 및 회사명 키워드 목록 (제목 기반 관련성 필터)
         import re as _re
-        name = obj.info.get("shortName", "") or obj.info.get("longName", "") or ""
+        try:
+            info = obj.info
+            name = info.get("shortName", "") or info.get("longName", "") or ""
+        except Exception:
+            name = ""  # ETF 등 펀더멘털 데이터 없는 종목은 종목명 키워드 없이 진행
         keywords = [ticker.split(".")[0].lower()]
         for word in name.split():
             clean = _re.sub(r'[^a-zA-Z0-9가-힣]', '', word).lower()
@@ -359,7 +363,7 @@ def fetch_naver_news(query: str, max_results: int = 5, days: int = 1) -> list:
         print(f"   ⚠️ Naver News API 수집 실패: {e}")
     return []
 
-def get_asset_news(ticker: str, name: str) -> str:
+def get_asset_news(ticker: str, name: str, etf_queries: dict | None = None) -> str:
     """자산군에 따라 최적화된 방식으로 뉴스를 검색합니다.
 
     전략:
@@ -367,9 +371,11 @@ def get_asset_news(ticker: str, name: str) -> str:
     - Tavily: basic 검색(1크레딧/건)
       - 미국: 영미권 신뢰 매체, 종목당 1회
       - 한국: 글로벌 영문 매체(외신) + 국내 경제지, 종목당 2회
+    - ETF: etf_queries로 테마/섹터 기반 검색어 사용
     """
     asset_type = get_asset_type(ticker)
-    print(f"🔍 [{ticker}] 뉴스 검색 중... (Type: {asset_type})")
+    etf_tag = " [ETF]" if etf_queries else ""
+    print(f"🔍 [{ticker}] 뉴스 검색 중... (Type: {asset_type}{etf_tag})")
 
     news_text = ""
 
@@ -380,9 +386,11 @@ def get_asset_news(ticker: str, name: str) -> str:
 
     # ── Tavily 검색 ──
     if asset_type == "KR_STOCK":
-        # 1) 글로벌 외신: 최적화된 영문 키워드로 영미권 매체 검색
-        #    (신뢰 도메인 한정이므로 min_score를 낮춰도 노이즈가 적음)
-        query_global = KR_GLOBAL_QUERY_MAP.get(ticker, get_ticker_name(ticker))
+        # 1) 글로벌 외신 검색어 결정
+        if etf_queries:
+            query_global = etf_queries["english_query"]
+        else:
+            query_global = KR_GLOBAL_QUERY_MAP.get(ticker, get_ticker_name(ticker))
         print(f"   👉 Query(Global): {query_global}")
         results_global = _search_tavily(query_global, TRUSTED_DOMAINS_US,
                                         max_results=5, min_score=0.03)
@@ -393,29 +401,28 @@ def get_asset_news(ticker: str, name: str) -> str:
             if result.get('url'):
                 news_text += f"Source: {result['url']}\n"
 
-        # 2) 국내 뉴스: 한글명으로 국내 경제지 검색
-        # name_kr = get_ticker_name_kr(ticker) is no longer needed as name is already KR name
-        query = name          # 한글명만으로 검색
-        print(f"   👉 Query(Local): {query}")
-        
-        # 1순위: 네이버 뉴스와 구글 뉴스 RSS를 모두 수집
+        # 2) 국내 뉴스 검색어 결정
+        if etf_queries and etf_queries.get("korean_query"):
+            query_local = etf_queries["korean_query"]
+        else:
+            query_local = name
+        print(f"   👉 Query(Local): {query_local}")
+
         results = []
-        
-        results_naver = fetch_naver_news(query, max_results=5)
+        results_naver = fetch_naver_news(query_local, max_results=5)
         if results_naver:
             print(f"   ✅ Naver News API 수집 완료 ({len(results_naver)}건)")
             results.extend(results_naver)
-            
-        results_google = fetch_google_news(query, max_results=5, days=1)
+
+        results_google = fetch_google_news(query_local, max_results=5, days=1)
         if results_google:
             print(f"   ✅ Google News RSS 수집 완료 ({len(results_google)}건)")
             results.extend(results_google)
-        
-        # 2순위: 둘 다 결과가 없을 경우 최후의 수단으로 Tavily 검색
+
         if not results:
             print(f"   ⚠️ Naver 및 Google News RSS 검색 결과 없음. Tavily로 대체 수집 🚀")
-            results = _search_tavily(query, TRUSTED_DOMAINS_KR, max_results=5)
-            
+            results = _search_tavily(query_local, TRUSTED_DOMAINS_KR, max_results=5)
+
         for idx, result in enumerate(results):
             news_text += f"\n--- [Local/Korean] 기사 {idx+1} ---\n"
             news_text += f"제목: {result['title']}\n"
@@ -424,31 +431,26 @@ def get_asset_news(ticker: str, name: str) -> str:
                 news_text += f"Source: {result['url']}\n"
 
     else:
-        # US Stock: 회사명에서 불필요한 기업 형태 식별자(Inc, Corp 등) 제거
-        import re
-        clean_name = re.sub(r'(?i)\b(inc|corp|corporation|co|ltd|plc|company|holdings?|group|international|limited)\b\.?', '', name).strip()
-        # 쉼표나 특수문자 제거
-        clean_name = re.sub(r'[,]+', '', clean_name).strip()
-        # 공백이 여러개면 하나로
-        clean_name = re.sub(r'\s+', ' ', clean_name)
-        
-        # 빈 문자열이면 원래 이름의 첫 단어 사용 (안전망)
-        if not clean_name:
-            clean_name = name.split()[0]
-            
-        # 티커 또는 정제된 회사명으로 검색하여 관련도를 높임
-        query = f'{ticker} OR "{clean_name}"'
+        # US Stock / US ETF
+        if etf_queries:
+            query = etf_queries["english_query"]
+        else:
+            import re
+            clean_name = re.sub(r'(?i)\b(inc|corp|corporation|co|ltd|plc|company|holdings?|group|international|limited)\b\.?', '', name).strip()
+            clean_name = re.sub(r'[,]+', '', clean_name).strip()
+            clean_name = re.sub(r'\s+', ' ', clean_name)
+            if not clean_name:
+                clean_name = name.split()[0]
+            query = f'{ticker} OR "{clean_name}"'
         print(f"   👉 Query: {query}")
-        
-        # 1순위: Tavily (신뢰 도메인 한정, 고품질)
+
         results = _search_tavily(query, TRUSTED_DOMAINS_US, max_results=5)
-        
-        # 2순위: Tavily 결과가 없으면 Google News RSS로 폴백
+
         if not results:
             results = fetch_google_news(query, max_results=5, days=1)
             if results:
                 print(f"   ✅ Google News RSS 폴백 수집 완료 ({len(results)}건)")
-            
+
         for idx, result in enumerate(results):
             news_text += f"\n--- 기사 {idx+1} ---\n"
             news_text += f"Title: {result['title']}\n"
