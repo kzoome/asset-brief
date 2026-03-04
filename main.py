@@ -59,8 +59,8 @@ async def main(market: str = "all"):
             market_data = get_market_data(ticker)
             change_1d = item.get("change_1d", 0.0)  # 구글 시트에서 가져온 1d 변동률
 
-            # 2.5 DART 공시 데이터 (KR_STOCK)
-            if market == "kr" or ticker.endswith(".KS") or ticker.endswith(".KQ"):
+            # 2.5 DART 공시 데이터 (KR_STOCK, ETF 제외)
+            if not etf_q and (ticker.endswith(".KS") or ticker.endswith(".KQ")):
                 dart_data = get_recent_disclosures(ticker, days=2)
                 if dart_data:
                     news_data += "\n\n" + dart_data

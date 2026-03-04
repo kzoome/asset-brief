@@ -316,7 +316,7 @@ def fetch_naver_news(query: str, max_results: int = 5, days: int = 1) -> list:
         
     enc_query = urllib.parse.quote(query)
     # sort=date로 변경하여 최신순 수집
-    url = f"https://openapi.naver.com/v1/search/news.json?query={enc_query}&display={max_results * 2}&sort=date"
+    url = f"https://openapi.naver.com/v1/search/news.json?query={enc_query}&display=100&sort=date"
     
     request = urllib.request.Request(url)
     request.add_header("X-Naver-Client-Id", client_id)
@@ -326,14 +326,16 @@ def fetch_naver_news(query: str, max_results: int = 5, days: int = 1) -> list:
         response = urllib.request.urlopen(request)
         if response.getcode() == 200:
             data = json.loads(response.read().decode('utf-8'))
-            results = []
-            cutoff = datetime.now() - timedelta(days=days)
-            
             from bs4 import BeautifulSoup
-            
+
+            now = datetime.now()
+            cutoff = now - timedelta(days=days + 1)  # Tavily/Google과 동일하게 여유 +1일
+            priority_cutoff = now - timedelta(hours=24)  # 24시간 이내 = 우선순위 높음
+
+            candidates = []
             for item in data.get('items', []):
-                # pubDate 파싱 (RFC 822 format: "Fri, 27 Feb 2026 14:15:00 +0900")
                 pub_date_str = item.get('pubDate', '')
+                pub_dt = None
                 if pub_date_str:
                     try:
                         pub_dt = parsedate_to_datetime(pub_date_str).replace(tzinfo=None)
@@ -344,20 +346,30 @@ def fetch_naver_news(query: str, max_results: int = 5, days: int = 1) -> list:
 
                 title = BeautifulSoup(item.get('title', ''), "html.parser").get_text()
                 desc = BeautifulSoup(item.get('description', ''), "html.parser").get_text()
-                
-                results.append({
+
+                # 24시간 이내면 우선순위 0, 그 이상이면 1 (낮을수록 먼저)
+                priority = 0 if (pub_dt and pub_dt >= priority_cutoff) else 1
+
+                candidates.append({
                     "title": title,
                     "url": item.get('link', ''),
                     "content": desc,
-                    "published_date": pub_date_str
+                    "published_date": pub_date_str,
+                    "_priority": priority,
+                    "_pub_dt": pub_dt or datetime.min,
                 })
-                if len(results) >= max_results:
-                    break
-            
-            dropped = len(data.get('items', [])) - len(results)
+
+            # 24시간 이내 기사 먼저, 그 다음 최신순
+            candidates.sort(key=lambda x: (x["_priority"], -x["_pub_dt"].timestamp()))
+
+            results = []
+            for c in candidates[:max_results]:
+                results.append({k: v for k, v in c.items() if not k.startswith("_")})
+
+            dropped = len(data.get('items', [])) - len(candidates)
             if dropped > 0:
                 print(f"   🔻 Naver 뉴스 필터링: {dropped}건 제외 (오래된 기사)")
-                
+
             return results
     except Exception as e:
         print(f"   ⚠️ Naver News API 수집 실패: {e}")
@@ -392,8 +404,9 @@ def get_asset_news(ticker: str, name: str, etf_queries: dict | None = None) -> s
         else:
             query_global = KR_GLOBAL_QUERY_MAP.get(ticker, get_ticker_name(ticker))
         print(f"   👉 Query(Global): {query_global}")
+        etf_min_score = 0.35 if etf_queries else 0.03
         results_global = _search_tavily(query_global, TRUSTED_DOMAINS_US,
-                                        max_results=5, min_score=0.03)
+                                        max_results=5, min_score=etf_min_score)
         for idx, result in enumerate(results_global):
             news_text += f"\n--- [Global/English] 기사 {idx+1} ---\n"
             news_text += f"Title: {result['title']}\n"
