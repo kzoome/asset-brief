@@ -104,7 +104,7 @@ def get_market_data(ticker: str) -> str:
         currency = "KRW" if ticker.endswith(".KS") or ticker.endswith(".KQ") else "USD"
         price_fmt = f"{current_price:,.0f}" if currency == "KRW" else f"{current_price:,.2f}"
         
-        return (f"💰 Price: {price_fmt} {currency}\n"
+        return (f"💵 Price: {price_fmt} {currency}\n"
                 f"📊 Chg: 1D {fmt_chg(d1)} / 1M {fmt_chg(m1)}")
         
     except Exception as e:
@@ -141,7 +141,7 @@ def get_upcoming_events(ticker: str, days_ahead: int = 7) -> str:
     if isinstance(ex_div, date) and today <= ex_div <= cutoff:
         d_day = (ex_div - today).days
         label = "D-day" if d_day == 0 else f"D-{d_day}"
-        alerts.append(f"💰 배당락일 {label} ({ex_div.strftime('%m/%d')})")
+        alerts.append(f"📅 배당락일 {label} ({ex_div.strftime('%m/%d')})")
 
     return "\n".join(alerts)
 

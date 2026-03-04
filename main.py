@@ -78,9 +78,13 @@ async def main(market: str = "all"):
             trend_prefix = f"<b>{core_trend}</b>\n\n" if core_trend else ""
             events_line = f"\n{events}" if events else ""
             impact_bp = weight * change_1d  # (%) × (%) = bp
-            weight_str = f" · 비중 {weight:.1f}%" if weight > 0 else ""
-            impact_str = f" ({impact_bp:+.1f}bp)" if weight > 0 and change_1d != 0 else ""
-            result_msg = f"━━━━━━━━━━\n📊 <b>{name} ({ticker})</b>{weight_str}{impact_str}\n{market_data}{events_line}\n\n{trend_prefix}{briefing}"
+            meta_parts = []
+            if weight > 0:
+                meta_parts.append(f"비중 {weight:.1f}%")
+            if weight > 0 and change_1d != 0:
+                meta_parts.append(f"임팩트 {impact_bp:+.1f}bp")
+            meta_line = f"\n{' · '.join(meta_parts)}" if meta_parts else ""
+            result_msg = f"━━━━━━━━━━\n<b>{name} ({ticker})</b>{meta_line}\n{market_data}{events_line}\n\n{trend_prefix}{briefing}"
 
             # 정렬 점수: 비중 × |1D 변동률| (비중 없을 경우 변동률만 사용)
             score = (weight if weight > 0 else 1.0) * abs(change_1d)

@@ -35,7 +35,7 @@ def get_recent_disclosures(ticker: str, days: int = 2) -> str:
 
         # 최신 공시부터 상위 5개만 텍스트로 정리
         max_items = 5
-        disclosure_text = "\n[📊 최근 DART 공시]\n"
+        disclosure_text = "\n[📋 최근 DART 공시]\n"
         count = 0
         
         for idx, row in res.iterrows():
