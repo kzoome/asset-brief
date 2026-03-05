@@ -16,8 +16,18 @@ from services.notifier import send_telegram_message
 from services.dart import get_recent_disclosures
 from services.portfolio import load_portfolio, FALLBACK_PORTFOLIO
 
-async def main(market: str = "all"):
-    print(f"=== 📈 AssetBrief 시작 (market={market}) ===\n")
+def is_morning_session(session: str) -> bool:
+    """오전 세션 여부 판단. session='auto'이면 현재 시각 기준 오전(12시 미만)으로 결정."""
+    if session == "am":
+        return True
+    if session == "pm":
+        return False
+    # auto: 현재 로컬 시각 기준
+    return datetime.now().hour < 12
+
+
+async def main(market: str = "all", session: str = "auto"):
+    print(f"=== 📈 AssetBrief 시작 (market={market}, session={session}) ===\n")
 
     # ── 0. 시장 전반 지수 및 뉴스 수집 ──
     market_status = get_global_market_status(market)
@@ -29,14 +39,16 @@ async def main(market: str = "all"):
     us_items = [p for p in portfolio if p["market"] == "us"]
     kr_items = [p for p in portfolio if p["market"] == "kr"]
 
+    morning = is_morning_session(session)
+
     if market == "us":
         items = us_items
         label = "🇺🇸 해외 주식"
     elif market == "kr":
         items = kr_items
         label = "🇰🇷 국내 주식"
-    else:  # all — 해외 먼저, 국내 나중에
-        items = us_items + kr_items
+    else:  # all
+        items = (us_items + kr_items) if morning else (kr_items + us_items)
         label = "전체"
 
     scored_briefs = []  # (score, result_msg) 리스트
@@ -93,10 +105,13 @@ async def main(market: str = "all"):
         except Exception as e:
             print(f"❌ [{ticker}] 에러가 발생했습니다: {e}\n")
 
-    # 해외 먼저 / 국내 나중에, 각 그룹 내 비중×|1d| 내림차순
+    # 오전: 해외 먼저 / 국내 나중에, 오후: 국내 먼저 / 해외 나중에, 각 그룹 내 비중×|1d| 내림차순
     def sort_key(x):
         score, _, item_market = x
-        group = 0 if item_market == "us" else 1
+        if morning:
+            group = 0 if item_market == "us" else 1
+        else:
+            group = 0 if item_market == "kr" else 1
         return (group, -score)
 
     scored_briefs.sort(key=sort_key)
@@ -189,5 +204,11 @@ if __name__ == "__main__":
         default="all",
         help="실행할 시장 (us=미국, kr=한국, all=전체)"
     )
+    parser.add_argument(
+        "--session",
+        choices=["am", "pm", "auto"],
+        default="auto",
+        help="브리핑 세션 (am=오전 US→KR, pm=오후 KR→US, auto=시각 자동감지)"
+    )
     args = parser.parse_args()
-    asyncio.run(main(market=args.market))
+    asyncio.run(main(market=args.market, session=args.session))
