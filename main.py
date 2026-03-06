@@ -3,6 +3,7 @@ import asyncio
 import argparse
 import re
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 
 # 1. 환경변수 선도 로드 (하위 모듈들이 초기화될 때 환경변수를 사용할 수 있도록)
@@ -17,13 +18,14 @@ from services.dart import get_recent_disclosures
 from services.portfolio import load_portfolio, FALLBACK_PORTFOLIO
 
 def is_morning_session(session: str) -> bool:
-    """오전 세션 여부 판단. session='auto'이면 현재 시각 기준 오전(12시 미만)으로 결정."""
+    """오전 세션 여부 판단. session='auto'이면 KST 기준 오전(12시 미만)으로 결정."""
     if session == "am":
         return True
     if session == "pm":
         return False
-    # auto: 현재 로컬 시각 기준
-    return datetime.now().hour < 12
+    # auto: KST(Asia/Seoul) 기준
+    kst_now = datetime.now(ZoneInfo("Asia/Seoul"))
+    return kst_now.hour < 12
 
 
 async def main(market: str = "all", session: str = "auto"):
@@ -138,7 +140,8 @@ async def main(market: str = "all", session: str = "auto"):
 
     # 5. 전체 브리핑을 하나로 합쳐서 텔레그램 전송
     if all_briefs:
-        header = f"📈 AssetBrief 데일리 브리핑 ({label})\n{datetime.now().strftime('%Y-%m-%d')}\n\n"
+        kst_now = datetime.now(ZoneInfo("Asia/Seoul"))
+        header = f"📈 AssetBrief 데일리 브리핑 ({label})\n{kst_now.strftime('%Y-%m-%d')}\n\n"
         
         # 인사이트 섹션 추가
         content_parts = []
