@@ -129,23 +129,23 @@ async def extract_etf_queries(ticker: str, name: str, is_kr: bool) -> dict:
         return fallback
 
 
-async def generate_global_insight(market_status: str, market_news: str) -> str:
-    """시장 지수 및 시황 뉴스를 종합하여 글로벌 매크로 인사이트를 도출합니다."""
+async def generate_global_insight(market_news: str) -> str:
+    """최신 시황 뉴스를 종합하여 글로벌 매크로 인사이트를 도출합니다."""
     gemini_client = get_gemini_client()
     if not gemini_client:
+        return ""
+    if not market_news.strip():
+        print("⚠️ 수집된 시황 뉴스가 없어 인사이트 생성을 건너뜁니다.")
         return ""
 
     model_name = 'gemini-2.5-pro'
     print(f"🧠 전체 시장 인사이트 도출 중... ({model_name} 사용)\n")
-    
-    prompt = f"""
-    [오늘의 시장 데이터]
-    {market_status}
 
-    [주요 시황 뉴스]
+    prompt = f"""
+    [최근 12시간 시황 뉴스 (US / 국내 / 글로벌)]
     {market_news}
-    
-    위 데이터를 바탕으로 글로벌 거시경제 흐름과 주요 지수를 종합해, 가치투자(70%)와 추세추종(30%)을 결합한 하이브리드 투자 관점에서의 오늘의 시장 인사이트를 작성해줘.
+
+    위 뉴스를 종합해서 오늘의 시장 인사이트를 작성해줘.
     """
     
     try:

@@ -17,14 +17,14 @@ from services.notifier import send_telegram_message
 from services.dart import get_recent_disclosures
 from services.portfolio import load_portfolio, FALLBACK_PORTFOLIO
 
-def is_morning_session(session: str) -> bool:
+def is_morning_session(session: str, kst_now: datetime | None = None) -> bool:
     """오전 세션 여부 판단. session='auto'이면 KST 기준 오전(12시 미만)으로 결정."""
     if session == "am":
         return True
     if session == "pm":
         return False
-    # auto: KST(Asia/Seoul) 기준
-    kst_now = datetime.now(ZoneInfo("Asia/Seoul"))
+    if kst_now is None:
+        kst_now = datetime.now(ZoneInfo("Asia/Seoul"))
     return kst_now.hour < 12
 
 
@@ -41,7 +41,8 @@ async def main(market: str = "all", session: str = "auto"):
     us_items = [p for p in portfolio if p["market"] == "us"]
     kr_items = [p for p in portfolio if p["market"] == "kr"]
 
-    morning = is_morning_session(session)
+    kst_now = datetime.now(ZoneInfo("Asia/Seoul"))
+    morning = is_morning_session(session, kst_now)
 
     if market == "us":
         items = us_items
@@ -126,7 +127,7 @@ async def main(market: str = "all", session: str = "auto"):
     # ── 4. 전체 인사이트 도출 ──
     try:
         # 글로벌 인사이트 생성이 너무 오래 걸릴 경우(45초) 타임아웃 처리
-        global_insight = await asyncio.wait_for(generate_global_insight(market_status, market_news), timeout=45.0)
+        global_insight = await asyncio.wait_for(generate_global_insight(market_news), timeout=45.0)
     except asyncio.TimeoutError:
         print("⚠️ Global Insight 생성 타임아웃 (45초 초과). Flash 모델로 폴백합니다.")
         # generate_global_insight 내부에서도 예외 발생 시 Flash로 재시도하지만, 
@@ -140,24 +141,22 @@ async def main(market: str = "all", session: str = "auto"):
 
     # 5. 전체 브리핑을 하나로 합쳐서 텔레그램 전송
     if all_briefs:
-        kst_now = datetime.now(ZoneInfo("Asia/Seoul"))
         header = f"📈 AssetBrief 데일리 브리핑 ({label})\n{kst_now.strftime('%Y-%m-%d')}\n\n"
-        
-        # 인사이트 섹션 추가
-        content_parts = []
+
+        # 모든 구성요소를 순서대로 하나의 리스트로 구성
+        all_parts = []
         if global_insight:
-            content_parts.append(global_insight + "\n\n" + "━" * 15 + "\n")
-        
+            all_parts.append(global_insight + "\n\n" + "━" * 15 + "\n\n")
         if market_status:
-            content_parts.append(f"<b>[📊 시장 지표]</b>\n{market_status}\n\n")
-            
-        content_parts.extend(all_briefs)
-        
-        full_message = header + "\n\n".join(content_parts)
+            all_parts.append(f"<b>[📊 시장 지표]</b>\n{market_status}\n\n")
+        for brief in all_briefs:
+            all_parts.append(brief + "\n\n")
+
+        full_message = header + "".join(all_parts)
 
         # 텔레그램 메시지 최대 길이(4096자) 초과 시 자동 분할 전송
         MAX_LEN = 4096
-        
+
         if len(full_message) <= MAX_LEN:
             print("\n=== 텔레그램 전송 예정 메시지 ===")
             print(re.sub(r'<[^>]+>', '', full_message))
@@ -167,16 +166,7 @@ async def main(market: str = "all", session: str = "auto"):
         else:
             chunks = []
             current = header
-            
-            # 모든 구성요소를 하나의 리스트로 통합하여 순차적으로 청크 체킹
-            all_parts = []
-            if global_insight:
-                all_parts.append(global_insight + "\n\n" + "━" * 15 + "\n")
-            if market_status:
-                all_parts.append(f"<b>[📊 시장 지표]</b>\n{market_status}\n\n")
-            for brief in all_briefs:
-                all_parts.append(brief + "\n\n")
-                
+
             for part in all_parts:
                 if len(current) + len(part) > MAX_LEN:
                     # 현재 쌓인 current가 있다면 먼저 청크로 분리

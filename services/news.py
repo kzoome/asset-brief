@@ -148,7 +148,7 @@ def _get_yfinance_news(ticker: str, max_items: int = 5, days: int = 2) -> str:
 
 
 def _search_tavily(query: str, include_domains: list, max_results: int = 5,
-                   days: int = 1, min_score: float = 0.1) -> list:
+                   days: int = 1, min_score: float = 0.1, cutoff_hours: int = None) -> list:
     """Tavily basic 검색을 도메인 필터링과 함께 수행합니다. (1 크레딧/건)"""
     if not tavily_client:
         return []
@@ -167,8 +167,11 @@ def _search_tavily(query: str, include_domains: list, max_results: int = 5,
 
         # 1. score 필터
         filtered = [r for r in results if r.get("score", 0) >= min_score]
-        # 2. 날짜 필터: published_date가 있으면 days 범위 내인지 확인, 없으면 URL에서 추정, 그래도 없으면 HTML 확인
-        cutoff = datetime.now() - timedelta(days=days + 1)  # 여유 +1일
+        # 2. 날짜 필터: published_date가 있으면 범위 내인지 확인, 없으면 URL에서 추정, 그래도 없으면 HTML 확인
+        if cutoff_hours is not None:
+            cutoff = datetime.now() - timedelta(hours=cutoff_hours)
+        else:
+            cutoff = datetime.now() - timedelta(days=days + 1)  # 여유 +1일
         date_filtered = []
         import re
         import urllib.request
@@ -228,9 +231,13 @@ def _search_tavily(query: str, include_domains: list, max_results: int = 5,
                     print(f"   🗓️ 오래된 기사 제외: {r.get('title', '')[:40]}... ({pub_dt.strftime('%Y-%m-%d')})")
                     continue
             else:
-                # 끝까지 날짜를 모르는 경우 제외 (오래된 기사 노출 방지 위함)
-                print(f"   🗓️ 날짜 미상 기사 제외: {r.get('title', '')[:40]}...")
-                continue
+                # 날짜 불명이더라도 신뢰 도메인이면 통과 (Tavily가 이미 시간 조건으로 필터링)
+                is_trusted = include_domains and any(d in url for d in include_domains)
+                if is_trusted:
+                    print(f"   ✅ 신뢰 도메인 날짜 미상 통과: {r.get('title', '')[:40]}...")
+                else:
+                    print(f"   🗓️ 날짜 미상 기사 제외: {r.get('title', '')[:40]}...")
+                    continue
             
             date_filtered.append(r)
         filtered = date_filtered
@@ -259,22 +266,25 @@ def _search_tavily(query: str, include_domains: list, max_results: int = 5,
         return []
 
 
-def fetch_google_news(query: str, max_results: int = 5, days: int = 1) -> list:
+def fetch_google_news(query: str, max_results: int = 5, days: int = 1, cutoff_hours: int = None) -> list:
     """Google News RSS를 통해 기사를 가져옵니다. Tavily 검색 실패 시 대안으로 사용합니다."""
     import urllib.parse
     import feedparser
     import ssl
-    
+
     enc_query = urllib.parse.quote(query)
     # 한국어 뉴스 검색
     url = f"https://news.google.com/rss/search?q={enc_query}&hl=ko&gl=KR&ceid=KR:ko"
-    
+
     if hasattr(ssl, '_create_unverified_context'):
         ssl._create_default_https_context = ssl._create_unverified_context
-        
+
     try:
         feed = feedparser.parse(url)
-        cutoff = datetime.now() - timedelta(days=days + 1)
+        if cutoff_hours is not None:
+            cutoff = datetime.now() - timedelta(hours=cutoff_hours)
+        else:
+            cutoff = datetime.now() - timedelta(days=days + 1)
         results = []
         
         for entry in feed.entries:
@@ -477,29 +487,27 @@ def get_asset_news(ticker: str, name: str, etf_queries: dict | None = None) -> s
     return news_text
 
 def get_market_news(market: str = "all") -> str:
-    """전반적인 시장 뉴스(시황)를 수집합니다."""
-    queries = []
-    if market == "us":
-        queries.append("US Stock Market Today")
-    elif market == "kr":
-        queries.append("국내 증시 시황 전망")
-    else:
-        queries.append("Global Stock Market News")
-        queries.append("국내 증시 시황")
+    """전반적인 시장 뉴스(시황)를 수집합니다. market 파라미터와 무관하게 US/KR/글로벌 전체를 수집합니다."""
+    queries = [
+        "US Stock Market Today",
+        "국내 증시 시황 전망",
+        "Global Stock Market News",
+    ]
+    CUTOFF_HOURS = 12  # 최근 12시간 이내 뉴스만
 
     news_text = ""
     for query in queries:
-        print(f"🌍 시장 뉴스 검색 중: {query}")
-        # Tavily (1 credit)
-        results = _search_tavily(query, include_domains=None, max_results=7, days=1)
-        
-        # Fallback to Google News if empty
+        print(f"🌍 시장 뉴스 검색 중 (최근 {CUTOFF_HOURS}h): {query}")
+        results = fetch_google_news(query, max_results=7, cutoff_hours=CUTOFF_HOURS)
+
+        # 12시간 내 결과 없으면 24시간으로 완화
         if not results:
-            results = fetch_google_news(query, max_results=7, days=1)
-            
+            print(f"   ⚠️ 12h 내 결과 없음. 24h로 재시도: {query}")
+            results = fetch_google_news(query, max_results=7, cutoff_hours=24)
+
         for idx, r in enumerate(results):
             news_text += f"\n- {r['title']}\n  Content: {r['content'][:200]}...\n"
             if r.get('url'):
                 news_text += f"  Source: {r['url']}\n"
-    
+
     return news_text
