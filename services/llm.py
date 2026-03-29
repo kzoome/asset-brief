@@ -6,6 +6,7 @@ from config.prompts import SYSTEM_PROMPTS
 
 _client = None
 
+
 def get_gemini_client():
     global _client
     if _client is None:
@@ -14,23 +15,24 @@ def get_gemini_client():
             _client = genai.Client(api_key=google_api_key)
     return _client
 
+
 async def summarize_news(ticker: str, name: str, news_data: str) -> str:
     """Gemini API를 이용해 뉴스를 투자자 관점에서 3줄 요약합니다."""
     gemini_client = get_gemini_client()
     if not gemini_client:
         return "⚠️ Google API 설정이 누락되어 뉴스를 요약할 수 없습니다."
-        
+
     print(f"🧠 [{ticker}] Gemini가 뉴스를 분석 및 요약 중...\n")
-    
+
     # 자산군에 따른 프롬프트 선택
     asset_type = get_asset_type(ticker)
     system_instruction = SYSTEM_PROMPTS.get(asset_type, SYSTEM_PROMPTS["US_STOCK"])
-    
+
     if asset_type == "KR_STOCK":
         prompt = f"다음은 '{name}'({ticker})에 대한 오늘자 뉴스들이다. 외신과 국내 뉴스를 구분하여 각각 3줄씩 요약해줘. 요약 내용에 기업명이 들어갈 경우 가급적 '{name}'으로 표기해줘.\n{news_data}"
     else:
         prompt = f"다음은 '{name}'({ticker})에 대한 오늘자 뉴스들이다. 이를 분석해서 3줄로 브리핑해줘.\n{news_data}"
-    
+
     # 모델 호출 (temperature를 낮춰서 할루시네이션을 줄이고 팩트 위주로 생성)
     try:
         response = await gemini_client.aio.models.generate_content(
@@ -38,12 +40,13 @@ async def summarize_news(ticker: str, name: str, news_data: str) -> str:
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
-                temperature=0.2 
+                temperature=0.2
             )
         )
         return response.text
     except Exception as e:
         return f"⚠️ Gemini 생성 오류: {e}"
+
 
 async def extract_core_trend(ticker: str, brief: str) -> str:
     """개별 종목 브리핑에서 가장 핵심적인 동향 1문장을 추출합니다."""
@@ -69,6 +72,7 @@ async def extract_core_trend(ticker: str, brief: str) -> str:
     except Exception as e:
         print(f"⚠️ [{ticker}] 트렌드 추출 오류: {e}")
         return ""
+
 
 async def extract_etf_queries(ticker: str, name: str, is_kr: bool) -> dict:
     """ETF의 테마/섹터를 파악하여 뉴스 검색 키워드를 생성합니다.
@@ -120,7 +124,7 @@ async def extract_etf_queries(ticker: str, name: str, is_kr: bool) -> dict:
         parsed = json.loads(text)
         result = {
             "english_query": parsed.get("english_query") or fallback["english_query"],
-            "korean_query":  parsed.get("korean_query") or None,
+            "korean_query": parsed.get("korean_query") or None,
         }
         print(f"   🏷️ ETF 검색어: EN='{result['english_query']}' / KR='{result['korean_query']}'")
         return result
@@ -147,7 +151,7 @@ async def generate_global_insight(market_news: str) -> str:
 
     위 뉴스를 종합해서 오늘의 시장 인사이트를 작성해줘.
     """
-    
+
     try:
         response_stream = await gemini_client.aio.models.generate_content_stream(
             model=model_name,
