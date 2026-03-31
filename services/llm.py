@@ -29,7 +29,7 @@ async def summarize_news(ticker: str, name: str, news_data: str) -> str:
     system_instruction = SYSTEM_PROMPTS.get(asset_type, SYSTEM_PROMPTS["US_STOCK"])
 
     if asset_type == "KR_STOCK":
-        prompt = f"다음은 '{name}'({ticker})에 대한 오늘자 뉴스들이다. 외신과 국내 뉴스를 구분하여 각각 3줄씩 요약해줘. 요약 내용에 기업명이 들어갈 경우 가급적 '{name}'으로 표기해줘.\n{news_data}"
+        prompt = f"다음은 '{name}'({ticker})에 대한 오늘자 뉴스들이다. 섹션 구분 없이 핵심 사실 위주로 3줄 이내로 요약해줘. 요약 내용에 기업명이 들어갈 경우 가급적 '{name}'으로 표기해줘.\n{news_data}"
     else:
         prompt = f"다음은 '{name}'({ticker})에 대한 오늘자 뉴스들이다. 이를 분석해서 3줄로 브리핑해줘.\n{news_data}"
 
@@ -46,6 +46,34 @@ async def summarize_news(ticker: str, name: str, news_data: str) -> str:
         return response.text
     except Exception as e:
         return f"⚠️ Gemini 생성 오류: {e}"
+
+
+async def summarize_news_short(ticker: str, name: str, news_data: str) -> str:
+    """뉴스에서 핵심 사실 1문장을 빠르게 추출합니다. (MID 티어 스캔뷰용)"""
+    gemini_client = get_gemini_client()
+    if not gemini_client:
+        return ""
+
+    asset_type = get_asset_type(ticker)
+    short_prompt_key = f"{asset_type}_SHORT"
+    system_instruction = SYSTEM_PROMPTS.get(short_prompt_key, SYSTEM_PROMPTS["US_STOCK_SHORT"])
+
+    try:
+        response = await gemini_client.aio.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=f"'{name}'({ticker}) 뉴스:\n{news_data}",
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.1
+            )
+        )
+        text = response.text.replace('\n', ' ').strip()
+        if text.startswith('-'):
+            text = text[1:].strip()
+        return text
+    except Exception as e:
+        print(f"⚠️ [{ticker}] 단문 요약 오류: {e}")
+        return ""
 
 
 async def extract_core_trend(ticker: str, brief: str) -> str:
