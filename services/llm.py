@@ -1,10 +1,37 @@
 import os
+import asyncio
 from google import genai
 from google.genai import types
 from utils.market import get_asset_type
 from config.prompts import SYSTEM_PROMPTS
 
 _client = None
+
+_RETRYABLE_CODES = {429, 500, 503}
+_MAX_RETRIES = 3
+_RETRY_DELAY = 5  # seconds
+
+
+async def _generate_with_retry(gemini_client, **kwargs) -> str:
+    """generate_content를 재시도 로직과 함께 호출합니다. (503/429 등 일시적 오류 대응)"""
+    last_exc = None
+    for attempt in range(1, _MAX_RETRIES + 1):
+        try:
+            response = await gemini_client.aio.models.generate_content(**kwargs)
+            return response.text
+        except Exception as e:
+            last_exc = e
+            code = getattr(e, 'code', None) or getattr(getattr(e, 'status', None), 'value', None)
+            # 문자열 메시지에서 코드 추출 시도
+            msg = str(e)
+            is_retryable = any(str(c) in msg for c in _RETRYABLE_CODES)
+            if is_retryable and attempt < _MAX_RETRIES:
+                wait = _RETRY_DELAY * attempt
+                print(f"   ⏳ Gemini 일시 오류 (시도 {attempt}/{_MAX_RETRIES}), {wait}초 후 재시도... ({e})")
+                await asyncio.sleep(wait)
+            else:
+                raise
+    raise last_exc
 
 
 def get_gemini_client():
@@ -35,7 +62,8 @@ async def summarize_news(ticker: str, name: str, news_data: str) -> str:
 
     # 모델 호출 (temperature를 낮춰서 할루시네이션을 줄이고 팩트 위주로 생성)
     try:
-        response = await gemini_client.aio.models.generate_content(
+        return await _generate_with_retry(
+            gemini_client,
             model='gemini-2.5-flash',
             contents=prompt,
             config=types.GenerateContentConfig(
@@ -43,7 +71,6 @@ async def summarize_news(ticker: str, name: str, news_data: str) -> str:
                 temperature=0.2
             )
         )
-        return response.text
     except Exception as e:
         return f"⚠️ Gemini 생성 오류: {e}"
 
@@ -59,7 +86,8 @@ async def summarize_news_short(ticker: str, name: str, news_data: str) -> str:
     system_instruction = SYSTEM_PROMPTS.get(short_prompt_key, SYSTEM_PROMPTS["US_STOCK_SHORT"])
 
     try:
-        response = await gemini_client.aio.models.generate_content(
+        text = await _generate_with_retry(
+            gemini_client,
             model='gemini-2.5-flash',
             contents=f"'{name}'({ticker}) 뉴스:\n{news_data}",
             config=types.GenerateContentConfig(
@@ -67,7 +95,7 @@ async def summarize_news_short(ticker: str, name: str, news_data: str) -> str:
                 temperature=0.1
             )
         )
-        text = response.text.replace('\n', ' ').strip()
+        text = text.replace('\n', ' ').strip()
         if text.startswith('-'):
             text = text[1:].strip()
         return text
@@ -83,7 +111,8 @@ async def extract_core_trend(ticker: str, brief: str) -> str:
         return ""
 
     try:
-        response = await gemini_client.aio.models.generate_content(
+        trend = await _generate_with_retry(
+            gemini_client,
             model='gemini-2.5-flash',
             contents=f"[{ticker}] 브리핑:\n{brief}",
             config=types.GenerateContentConfig(
@@ -92,7 +121,7 @@ async def extract_core_trend(ticker: str, brief: str) -> str:
             )
         )
         # 1줄로 정제
-        trend = response.text.replace('\n', ' ').strip()
+        trend = trend.replace('\n', ' ').strip()
         # 하이픈 시작 제거
         if trend.startswith('-'):
             trend = trend[1:].strip()
@@ -139,13 +168,14 @@ async def extract_etf_queries(ticker: str, name: str, is_kr: bool) -> dict:
 }}"""
 
     try:
-        response = await gemini_client.aio.models.generate_content(
+        import json, re
+        text = await _generate_with_retry(
+            gemini_client,
             model='gemini-2.5-flash',
             contents=prompt,
             config=types.GenerateContentConfig(temperature=0.1),
         )
-        import json, re
-        text = response.text.strip()
+        text = text.strip()
         # 코드블록 제거
         text = re.sub(r'^```(?:json)?\s*', '', text)
         text = re.sub(r'\s*```$', '', text)
