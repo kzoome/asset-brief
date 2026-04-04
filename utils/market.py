@@ -150,10 +150,10 @@ def get_global_market_status(market: str = "all") -> str:
     """주요 시장 지수 및 환율 정보를 가져옵니다 (다기간 변동률 포함)."""
     indices = []
     if market in ["us", "all"]:
-        indices += [("^GSPC", "S&P 500"), ("^IXIC", "Nasdaq"), ("^DJI", "Dow Jones")]
+        indices += [("^GSPC", "S&P 500")]
     if market in ["kr", "all"]:
-        indices += [("^KS11", "KOSPI"), ("^KQ11", "KOSDAQ")]
-    
+        indices += [("^KS11", "KOSPI")]
+
     indices += [("USDKRW=X", "USD/KRW")]
 
     results = []

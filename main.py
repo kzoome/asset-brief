@@ -10,15 +10,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 환경변수 로드 완료 후 모듈 임포트
-from utils.market import get_ticker_name_kr, get_market_data, get_global_market_status, get_upcoming_events, is_etf
+from utils.market import get_ticker_name_kr, get_global_market_status
 from services.news import get_asset_news
-from services.llm import summarize_news, summarize_news_short, extract_core_trend, extract_etf_queries
+from services.llm import summarize_news_short
 from services.notifier import send_telegram_message
 from services.dart import get_recent_disclosures
 from services.portfolio import load_portfolio, FALLBACK_PORTFOLIO
-
-# 상세 브리핑을 생성할 상위 종목 수 (비중×|변동률| 기준)
-HIGH_N = 3
 
 
 def is_morning_session(session: str, kst_now: datetime | None = None) -> bool:
@@ -71,16 +68,7 @@ async def main(market: str = "all", session: str = "auto"):
 
     sorted_items = sorted(items, key=sort_key)
 
-    # 시장별 상위 HIGH_N 종목 → HIGH 티어
-    high_tickers = set()
-    for mkt in ("us", "kr"):
-        mkt_items = [i for i in sorted_items if i["market"] == mkt]
-        top_n = min(HIGH_N, len(mkt_items))
-        for item in sorted(mkt_items, key=compute_score, reverse=True)[:top_n]:
-            high_tickers.add(item["ticker"])
-
-    # scan_entries: (name, ticker, change_1d, summary, is_high, detail_msg)
-    # detail_msg: HIGH 티어는 풀 브리핑 문자열, 나머지는 None
+    # scan_entries: (name, ticker, weight, change_1d, summary)
     scan_entries = []
 
     for item in sorted_items:
@@ -88,68 +76,31 @@ async def main(market: str = "all", session: str = "auto"):
         weight = item["weight"]
         change_1d = item.get("change_1d", 0.0)
         name = item["name"] or get_ticker_name_kr(ticker)
-        is_high = ticker in high_tickers
         score = compute_score(item)
 
         try:
-            market_data = get_market_data(ticker)
-            events = get_upcoming_events(ticker)
-
-            if is_high:
-                # ── HIGH 티어: 전체 파이프라인 ──
-                etf_q = None
-                if is_etf(ticker, name):
-                    is_kr_etf = ticker.endswith((".KS", ".KQ"))
-                    etf_q = await extract_etf_queries(ticker, name, is_kr_etf)
-                news_data = get_asset_news(ticker, name, etf_queries=etf_q)
-                if not etf_q and ticker.endswith((".KS", ".KQ")):
-                    dart_data = get_recent_disclosures(ticker, days=2)
-                    if dart_data:
-                        news_data += "\n\n" + dart_data
-                briefing = await summarize_news(ticker, name, news_data)
-                core_trend = await extract_core_trend(ticker, briefing)
-
-                # 상세 브리핑 메시지 조립
-                trend_prefix = f"<b>{core_trend}</b>\n\n" if core_trend else ""
-                events_line = f"\n{events}" if events else ""
-                meta_parts = []
-                if weight > 0:
-                    meta_parts.append(f"비중 {weight:.1f}%")
-                if weight > 0 and change_1d != 0:
-                    meta_parts.append(f"임팩트 {weight * change_1d:+.1f}bp")
-                meta_line = f"\n{' · '.join(meta_parts)}" if meta_parts else ""
-                detail_msg = f"━━━━━━━━━━\n<b>{name} ({ticker})</b>{meta_line}\n{market_data}{events_line}\n\n{trend_prefix}{briefing}"
-                scan_entries.append((name, ticker, change_1d, core_trend, True, detail_msg))
-                print(detail_msg)
-                print()
-
-            elif score > 0:
-                # ── MID 티어: 단문 요약만 ──
+            if score > 0:
                 news_data = get_asset_news(ticker, name)
                 if ticker.endswith((".KS", ".KQ")):
                     dart_data = get_recent_disclosures(ticker, days=2)
                     if dart_data:
                         news_data += "\n\n" + dart_data
                 short_summary = await summarize_news_short(ticker, name, news_data)
-                scan_entries.append((name, ticker, change_1d, short_summary, False, None))
-
+                scan_entries.append((name, ticker, weight, change_1d, short_summary))
             else:
-                # ── LOW 티어: API 호출 없음 ──
-                scan_entries.append((name, ticker, change_1d, "", False, None))
+                scan_entries.append((name, ticker, weight, change_1d, ""))
 
         except Exception as e:
             print(f"❌ [{ticker}] 에러가 발생했습니다: {e}\n")
-            scan_entries.append((name, ticker, change_1d, "", is_high, None))
-
-    global_insight = ""
+            scan_entries.append((name, ticker, weight, change_1d, ""))
 
     # ── 3. 메시지 파트 조립 ──
-    def format_entry(name, ticker, change_1d, summary, is_high, detail_msg):
-        if is_high and detail_msg:
-            return detail_msg
+    def format_entry(name, ticker, weight, change_1d, summary):
         sign = "+" if change_1d > 0 else ""
         change_str = f"{sign}{change_1d:.1f}%" if change_1d != 0 else "±0.0%"
-        line = f"<b>{name}</b>  {change_str}"
+        weight_str = f"{weight:.1f}%" if weight > 0 else "-"
+        arrow = "📈" if change_1d > 0 else ("📉" if change_1d < 0 else "➖")
+        line = f"{arrow} <b>{name}</b>  비중 {weight_str} / {change_str}"
         if summary:
             line += f"\n{summary}"
         return line
