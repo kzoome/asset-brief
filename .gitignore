@@ -4,4 +4,6 @@ venv/
 .env
 __pycache__/
 *.pyc
-.DS_Storedocs_cache/
+.DS_Store
+docs_cache/
+.idea/
