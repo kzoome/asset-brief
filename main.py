@@ -80,16 +80,13 @@ async def main(market: str = "all", session: str = "auto"):
         score = compute_score(item)
 
         try:
-            if score > 0:
-                news_data = get_asset_news(ticker, name)
-                if ticker.endswith((".KS", ".KQ")):
-                    dart_data = get_recent_disclosures(ticker, days=2)
-                    if dart_data:
-                        news_data += "\n\n" + dart_data
-                short_summary = await summarize_news_short(ticker, name, news_data)
-                scan_entries.append((name, ticker, weight, change_1d, short_summary))
-            else:
-                scan_entries.append((name, ticker, weight, change_1d, ""))
+            news_data = get_asset_news(ticker, name)
+            if ticker.endswith((".KS", ".KQ")):
+                dart_data = get_recent_disclosures(ticker, days=2)
+                if dart_data:
+                    news_data += "\n\n" + dart_data
+            short_summary = await summarize_news_short(ticker, name, news_data)
+            scan_entries.append((name, ticker, weight, change_1d, short_summary))
 
         except Exception as e:
             print(f"❌ [{ticker}] 에러가 발생했습니다: {e}\n")

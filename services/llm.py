@@ -78,7 +78,9 @@ async def summarize_news(ticker: str, name: str, news_data: str) -> str:
 
 
 async def summarize_news_short(ticker: str, name: str, news_data: str) -> str:
-    """뉴스에서 핵심 사실 1문장을 빠르게 추출합니다. (MID 티어 스캔뷰용)"""
+    """뉴스에서 핵심 사실 1문장을 빠르게 추출합니다. (MID 티어 스캔뷰용)
+    gemini-2.5-flash 재시도 소진 시 gemini-2.0-flash로 폴백합니다.
+    """
     gemini_client = get_gemini_client()
     if not gemini_client:
         return ""
@@ -87,23 +89,27 @@ async def summarize_news_short(ticker: str, name: str, news_data: str) -> str:
     short_prompt_key = f"{asset_type}_SHORT"
     system_instruction = SYSTEM_PROMPTS.get(short_prompt_key, SYSTEM_PROMPTS["US_STOCK_SHORT"])
 
-    try:
-        text = await _generate_with_retry(
-            gemini_client,
-            model='gemini-2.5-flash',
-            contents=f"'{name}'({ticker}) 뉴스:\n{news_data}",
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                temperature=0.1
+    for model in ('gemini-2.5-flash', 'gemini-2.0-flash'):
+        try:
+            text = await _generate_with_retry(
+                gemini_client,
+                model=model,
+                contents=f"'{name}'({ticker}) 뉴스:\n{news_data}",
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    temperature=0.1
+                )
             )
-        )
-        text = text.replace('\n', ' ').strip()
-        if text.startswith('-'):
-            text = text[1:].strip()
-        return text
-    except Exception as e:
-        print(f"⚠️ [{ticker}] 단문 요약 오류: {e}")
-        return ""
+            text = text.replace('\n', ' ').strip()
+            if text.startswith('-'):
+                text = text[1:].strip()
+            return text
+        except Exception as e:
+            if model == 'gemini-2.5-flash':
+                print(f"⚠️ [{ticker}] gemini-2.5-flash 실패, gemini-2.0-flash로 폴백... ({e})")
+            else:
+                print(f"⚠️ [{ticker}] 단문 요약 최종 실패: {e}")
+    return ""
 
 
 async def extract_core_trend(ticker: str, brief: str) -> str:
