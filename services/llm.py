@@ -9,25 +9,26 @@ from config.prompts import SYSTEM_PROMPTS
 _client = None
 
 _RETRYABLE_CODES = {429, 500, 503}
-_MAX_RETRIES = 3
-_RETRY_DELAY = 5  # seconds
+_MAX_RETRIES = 5
+_RETRY_BASE_DELAY = 5  # seconds (지수 백오프 기준: 5, 10, 20, 40s)
+_RETRY_MAX_DELAY = 60  # seconds (상한)
 
 
 async def _generate_with_retry(gemini_client, **kwargs) -> str:
-    """generate_content를 재시도 로직과 함께 호출합니다. (503/429 등 일시적 오류 대응)"""
+    """generate_content를 재시도 로직과 함께 호출합니다. (503/429 등 일시적 오류 대응)
+    지수 백오프: 5 → 10 → 20 → 40 → 60s (최대 5회 시도)
+    """
     last_exc = None
     for attempt in range(1, _MAX_RETRIES + 1):
         try:
             response = await gemini_client.aio.models.generate_content(**kwargs)
-            return response.text
+            return response.text or ""
         except Exception as e:
             last_exc = e
-            code = getattr(e, 'code', None) or getattr(getattr(e, 'status', None), 'value', None)
-            # 문자열 메시지에서 코드 추출 시도
             msg = str(e)
             is_retryable = any(str(c) in msg for c in _RETRYABLE_CODES)
             if is_retryable and attempt < _MAX_RETRIES:
-                wait = _RETRY_DELAY * attempt
+                wait = min(_RETRY_BASE_DELAY * (2 ** (attempt - 1)), _RETRY_MAX_DELAY)
                 print(f"   ⏳ Gemini 일시 오류 (시도 {attempt}/{_MAX_RETRIES}), {wait}초 후 재시도... ({e})")
                 await asyncio.sleep(wait)
             else:
