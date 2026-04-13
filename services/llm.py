@@ -89,7 +89,7 @@ async def summarize_news_short(ticker: str, name: str, news_data: str) -> str:
     short_prompt_key = f"{asset_type}_SHORT"
     system_instruction = SYSTEM_PROMPTS.get(short_prompt_key, SYSTEM_PROMPTS["US_STOCK_SHORT"])
 
-    for model in ('gemini-2.5-flash', 'gemini-2.0-flash'):
+    for model in ('gemini-2.5-flash', 'gemini-2.5-flash-lite'):
         try:
             text = await _generate_with_retry(
                 gemini_client,
@@ -106,7 +106,7 @@ async def summarize_news_short(ticker: str, name: str, news_data: str) -> str:
             return text
         except Exception as e:
             if model == 'gemini-2.5-flash':
-                print(f"⚠️ [{ticker}] gemini-2.5-flash 실패, gemini-2.0-flash로 폴백... ({e})")
+                print(f"⚠️ [{ticker}] gemini-2.5-flash 실패, gemini-2.5-flash-lite로 폴백... ({e})")
             else:
                 print(f"⚠️ [{ticker}] 단문 요약 최종 실패: {e}")
     return ""
