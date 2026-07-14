@@ -146,6 +146,35 @@ def get_upcoming_events(ticker: str, days_ahead: int = 7) -> str:
     return "\n".join(alerts)
 
 
+def _latest_closed_session(obj):
+    """quote 메타에서 가장 최근 마감된 세션의 (종가, 세션 날짜, 장중 여부)를 얻습니다.
+
+    야후의 일봉 차트 데이터는 하루 이상 지연될 수 있으나 quote 메타는 즉시 갱신되므로,
+    '전일 종가'는 일봉 마지막 봉 대신 여기서 가져옵니다. 실패 시 (None, None, False).
+    """
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    import time
+
+    meta = obj.history_metadata or {}
+    price = meta.get("regularMarketPrice")
+    ts = meta.get("regularMarketTime")
+    tz_name = meta.get("exchangeTimezoneName")
+    regular = (meta.get("currentTradingPeriod") or {}).get("regular") or {}
+    if price is None or ts is None or not tz_name:
+        return None, None, False
+
+    session_date = datetime.fromtimestamp(ts, ZoneInfo(tz_name)).date()
+    in_session = bool(regular.get("start")) and regular["start"] <= time.time() < regular.get("end", 0)
+    if in_session:
+        # 장중에는 현재가가 미마감 값이므로 전일 종가를 사용
+        prev = meta.get("previousClose")
+        if prev is None:
+            return None, None, False
+        return prev, session_date, True
+    return price, session_date, False
+
+
 def get_global_market_status(market: str = "all") -> str:
     """주요 시장 지수 및 환율 정보를 가져옵니다 (다기간 변동률 포함)."""
     indices = []
@@ -162,12 +191,22 @@ def get_global_market_status(market: str = "all") -> str:
             obj = yf.Ticker(ticker)
             hist = obj.history(period="2y")
             if hist.empty: continue
-            
-            curr = hist['Close'].iloc[-1]
-            
+
+            # 전일 종가는 지연 가능한 일봉 대신 quote 메타에서 가져오고,
+            # 변동률 기준(closes)은 해당 세션 이전의 일봉만 사용
+            curr, session_date, in_session = _latest_closed_session(obj)
+            if curr is None:
+                curr = hist['Close'].iloc[-1]
+                closes = hist['Close'].iloc[:-1]
+            else:
+                closes = hist['Close'][hist.index.date < session_date]
+                if in_session and len(closes) and abs(closes.iloc[-1] / curr - 1) < 1e-4:
+                    # 장중에는 curr(전일 종가)와 같은 세션의 봉이 남아 있으면 제거
+                    closes = closes.iloc[:-1]
+
             def get_chg(days):
-                if len(hist) > days:
-                    old = hist['Close'].iloc[-days-1]
+                if len(closes) >= days:
+                    old = closes.iloc[-days]
                     val = ((curr - old) / old) * 100
                     return f"{val:+.1f}%"
                 return "-"
