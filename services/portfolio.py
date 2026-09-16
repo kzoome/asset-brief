@@ -36,6 +36,15 @@ def _parse_pct(value: str) -> float:
         return 0.0
 
 
+def _parse_price(value: str) -> float | None:
+    """'1,277,000', '344.98' 등 주가 문자열을 float으로 변환합니다. 실패 시 None."""
+    cleaned = str(value).replace(",", "").replace("₩", "").replace("$", "").strip()
+    try:
+        return float(cleaned)
+    except ValueError:
+        return None
+
+
 def _normalize_ticker(raw: str, asset_type: str) -> tuple[str, str]:
     """
     티커를 yfinance 호환 형식으로 정규화하고 (ticker, market)을 반환합니다.
@@ -66,11 +75,12 @@ def load_portfolio() -> list[dict]:
     """
     구글 시트에서 포트폴리오를 로드합니다.
 
-    1단계: "종목별 현황(raw)" → {종목명: (ticker, market)} 매핑 구성
+    1단계: "종목별 현황(raw)" → {종목명: (ticker, market, price, currency)} 매핑 구성
     2단계: "종목별 현황"     → 비중(E열), 변동(1d)(F열) 읽기 + 매핑 조인
 
     Returns:
-        list of dict: [{'ticker', 'name', 'weight', 'change_1d', 'market'}, ...]
+        list of dict: [{'ticker', 'name', 'weight', 'change_1d', 'market', 'price', 'currency'}, ...]
+        주가 정보가 없으면 price=None, currency=''.
         비중 내림차순 정렬. 실패 시 FALLBACK_PORTFOLIO 반환.
     """
     try:
@@ -104,7 +114,7 @@ def load_portfolio() -> list[dict]:
         gc = gspread.authorize(creds)
         spreadsheet = gc.open_by_key(sheet_id)
 
-        # ── 1단계: raw 시트에서 종목명 → (ticker, market) 매핑 구성 ──
+        # ── 1단계: raw 시트에서 종목명 → (ticker, market, price, currency) 매핑 구성 ──
         raw_ws = spreadsheet.worksheet("종목별 현황(raw)")
         raw_rows = raw_ws.get_all_values()
 
@@ -123,8 +133,11 @@ def load_portfolio() -> list[dict]:
         ri_type   = raw_col["자산종류"]
         ri_ticker = raw_col[ticker_col]
         ri_name   = raw_col["종목명"]
+        # 주가·통화 컬럼은 선택 사항 (없으면 price=None)
+        ri_price  = raw_col.get("주가")
+        ri_cur    = raw_col.get("Currency")
 
-        name_to_ticker: dict[str, tuple[str, str]] = {}  # {종목명: (ticker, market)}
+        name_to_ticker: dict[str, tuple[str, str, float | None, str]] = {}  # {종목명: (ticker, market, price, currency)}
         for row in raw_rows[1:]:
             if len(row) <= max(ri_type, ri_ticker, ri_name):
                 continue
@@ -137,7 +150,10 @@ def load_portfolio() -> list[dict]:
             # 이미 등록된 종목명은 첫 번째 행 우선
             if name not in name_to_ticker:
                 ticker, market = _normalize_ticker(raw_ticker, row[ri_type])
-                name_to_ticker[name] = (ticker, market)
+                has_price = ri_price is not None and ri_cur is not None and len(row) > max(ri_price, ri_cur)
+                price    = _parse_price(row[ri_price]) if has_price else None
+                currency = row[ri_cur].strip() if has_price else ""
+                name_to_ticker[name] = (ticker, market, price, currency)
 
         # ── 2단계: 종목별 현황 시트에서 비중·1d변동 읽기 ──
         summary_ws = spreadsheet.worksheet("종목별 현황")
@@ -178,13 +194,15 @@ def load_portfolio() -> list[dict]:
                 logger.warning(f"'{name}'의 티커를 raw 시트에서 찾을 수 없습니다. 스킵합니다.")
                 continue
 
-            ticker, market = name_to_ticker[name]
+            ticker, market, price, currency = name_to_ticker[name]
             portfolio.append({
                 "ticker":    ticker,
                 "name":      name,
                 "weight":    weight,
                 "change_1d": change_1d,
                 "market":    market,
+                "price":     price,
+                "currency":  currency,
             })
 
         if not portfolio:

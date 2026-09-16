@@ -82,7 +82,7 @@ python list_models.py           # 사용 가능한 Gemini 모델 목록 조회
 ### 주요 설계 패턴
 
 **포트폴리오 로드 (2단계 조인)**
-- "종목별 현황(raw)" 탭: `종목명 → (ticker, market)` 매핑 구성
+- "종목별 현황(raw)" 탭: `종목명 → (ticker, market, price, currency)` 매핑 구성 (`주가`·`Currency` 컬럼, 없으면 price=None)
 - "종목별 현황" 탭: 비중(E열) + 1D 변동(F열) 읽기 후 조인
 - 6자리 숫자 티커 → `.KS` 자동 변환, `BRK.B` → `BRK-B` 변환
 

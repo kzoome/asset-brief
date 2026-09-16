@@ -69,13 +69,15 @@ async def main(market: str = "all", session: str = "auto"):
 
     sorted_items = sorted(items, key=sort_key)
 
-    # scan_entries: (name, ticker, weight, change_1d, summary)
+    # scan_entries: (name, ticker, weight, change_1d, price, currency, summary)
     scan_entries = []
 
     for item in sorted_items:
         ticker = item["ticker"]
         weight = item["weight"]
         change_1d = item.get("change_1d", 0.0)
+        price = item.get("price")
+        currency = item.get("currency", "")
         name = item["name"] or get_ticker_name_kr(ticker)
         score = compute_score(item)
 
@@ -86,19 +88,28 @@ async def main(market: str = "all", session: str = "auto"):
                 if dart_data:
                     news_data += "\n\n" + dart_data
             short_summary = await summarize_news_short(ticker, name, news_data)
-            scan_entries.append((name, ticker, weight, change_1d, short_summary))
+            scan_entries.append((name, ticker, weight, change_1d, price, currency, short_summary))
 
         except Exception as e:
             print(f"❌ [{ticker}] 에러가 발생했습니다: {e}\n")
-            scan_entries.append((name, ticker, weight, change_1d, ""))
+            scan_entries.append((name, ticker, weight, change_1d, price, currency, ""))
 
     # ── 3. 메시지 파트 조립 ──
-    def format_entry(name, ticker, weight, change_1d, summary):
+    def format_price(price, currency):
+        if price is None:
+            return ""
+        if currency == "KRW":
+            return f"₩{price:,.0f}"
+        symbol = "$" if currency == "USD" else f"{currency} "
+        return f"{symbol}{price:,.2f}"
+
+    def format_entry(name, ticker, weight, change_1d, price, currency, summary):
         sign = "+" if change_1d > 0 else ""
         change_str = f"{sign}{change_1d:.1f}%" if change_1d != 0 else "±0.0%"
         weight_str = f"{weight:.1f}%" if weight > 0 else "-"
         arrow = "📈" if change_1d > 0 else ("📉" if change_1d < 0 else "➖")
-        line = f"{arrow} <b>{name}</b>  비중 {weight_str} / {change_str}"
+        price_str = format_price(price, currency)
+        line = f"{arrow} <b>{name}</b>  {price_str + ' / ' if price_str else ''}비중 {weight_str} / {change_str}"
         if summary:
             line += f"\n{summary}"
         return line
