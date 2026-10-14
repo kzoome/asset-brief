@@ -11,9 +11,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 환경변수 로드 완료 후 모듈 임포트
-from utils.market import get_ticker_name_kr, get_global_market_status
+from utils.market import get_ticker_name_kr, get_global_market_status, is_etf
 from services.news import get_asset_news
-from services.llm import summarize_news_short
+from services.llm import summarize_news_short, extract_etf_queries
 from services.notifier import send_telegram_message
 from services.dart import get_recent_disclosures
 from services.portfolio import load_portfolio, FALLBACK_PORTFOLIO
@@ -82,8 +82,10 @@ async def main(market: str = "all", session: str = "auto"):
         score = compute_score(item)
 
         try:
-            news_data = get_asset_news(ticker, name)
-            if ticker.endswith((".KS", ".KQ")):
+            is_kr = ticker.endswith((".KS", ".KQ"))
+            etf_q = await extract_etf_queries(ticker, name, is_kr) if is_etf(ticker, name) else None
+            news_data = get_asset_news(ticker, name, etf_queries=etf_q)
+            if is_kr and not etf_q:
                 dart_data = get_recent_disclosures(ticker, days=2)
                 if dart_data:
                     news_data += "\n\n" + dart_data

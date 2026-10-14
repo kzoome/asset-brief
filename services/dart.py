@@ -15,6 +15,8 @@ def get_recent_disclosures(ticker: str, days: int = 2) -> str:
         
         # OpenDartReader는 yfinance의 '005930.KS' 포맷에서 .KS 등을 떼어내고 사용해야 함
         clean_ticker = ticker.split('.')[0]
+        # 우선주(끝자리 5·7·9 등)는 DART 기업코드에 없으므로 발행사인 보통주(끝자리 0) 코드로 조회
+        clean_ticker = clean_ticker[:5] + '0'
         
         # 기준일 계산 (오늘 기준으로 며칠 전부터)
         start_date = (datetime.now() - timedelta(days=days)).strftime('%Y%m%d')
