@@ -269,15 +269,18 @@ def _search_tavily(query: str, include_domains: list, max_results: int = 5,
         return []
 
 
-def fetch_google_news(query: str, max_results: int = 5, days: int = 1, cutoff_hours: int = None) -> list:
+def fetch_google_news(query: str, max_results: int = 5, days: int = 1, cutoff_hours: int = None,
+                      lang: str = "ko") -> list:
     """Google News RSS를 통해 기사를 가져옵니다. Tavily 검색 실패 시 대안으로 사용합니다."""
     import urllib.parse
     import feedparser
     import ssl
 
     enc_query = urllib.parse.quote(query)
-    # 한국어 뉴스 검색
-    url = f"https://news.google.com/rss/search?q={enc_query}&hl=ko&gl=KR&ceid=KR:ko"
+    if lang == "en":
+        url = f"https://news.google.com/rss/search?q={enc_query}&hl=en-US&gl=US&ceid=US:en"
+    else:
+        url = f"https://news.google.com/rss/search?q={enc_query}&hl=ko&gl=KR&ceid=KR:ko"
 
     if hasattr(ssl, '_create_unverified_context'):
         ssl._create_default_https_context = ssl._create_unverified_context
@@ -464,6 +467,7 @@ def get_asset_news(ticker: str, name: str, etf_queries: dict | None = None) -> s
         # US Stock / US ETF
         if etf_queries:
             query = etf_queries["english_query"]
+            rss_query, title_kw = query, None
         else:
             import re
             clean_name = re.sub(r'(?i)\b(inc|corp|corporation|co|ltd|plc|company|holdings?|group|international|limited)\b\.?', '', name).strip()
@@ -472,14 +476,20 @@ def get_asset_news(ticker: str, name: str, etf_queries: dict | None = None) -> s
             if not clean_name:
                 clean_name = name.split()[0]
             query = f'{ticker} OR "{clean_name}"'
+            # RSS는 회사명만으로 검색하고, 제목에 회사명이 있는 기사만 남김
+            rss_query = re.sub(r'(?i)\bclass [a-z]\b', '', clean_name).strip()
+            title_kw = rss_query.lower()
         print(f"   👉 Query: {query}")
 
         results = _search_tavily(query, TRUSTED_DOMAINS_US, max_results=5)
 
-        if not results:
-            results = fetch_google_news(query, max_results=5, days=1)
-            if results:
-                print(f"   ✅ Google News RSS 폴백 수집 완료 ({len(results)}건)")
+        # 영어판 Google News RSS는 항상 함께 수집 (Tavily만으로는 관련 기사를 자주 놓침)
+        results_rss = fetch_google_news(rss_query, max_results=5, days=1, lang="en")
+        if title_kw:
+            results_rss = [r for r in results_rss if title_kw in r["title"].lower()]
+        if results_rss:
+            print(f"   ✅ Google News RSS(en) 수집 완료 ({len(results_rss)}건, Query: {rss_query})")
+            results.extend(results_rss)
 
         for idx, result in enumerate(results):
             news_text += f"\n--- 기사 {idx+1} ---\n"

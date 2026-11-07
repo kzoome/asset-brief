@@ -88,7 +88,9 @@ python test_global_insight.py   # ⚠️ 현재 동작 안 함 (아래 "미사�
 
 **뉴스 소스 (`get_asset_news`)**
 - 공통: yfinance 뉴스 (최근 2일, 제목 관련성 필터)
-- 미국 주식: Tavily(`TRUSTED_DOMAINS_US`, `"{ticker} OR \"{회사명}\""` 쿼리). 결과가 없으면 Google News RSS로 폴백.
+- 미국 주식: Tavily(`TRUSTED_DOMAINS_US`, `"{ticker} OR \"{회사명}\""` 쿼리)와 영어판 Google News RSS를 **항상 함께** 수집한다.
+  - RSS 쿼리는 회사명이다(`Inc`·`Corp`·`Class B` 등 제거, 예: "Berkshire Hathaway"). 제목에 회사명이 들어간 기사만 남긴다. ETF는 ETF 검색어를 그대로 쓰고 제목 필터를 적용하지 않는다.
+  - 도입 이유: Tavily는 관련도 점수 기준선(0.1)과 좁은 범위 때문에, 대형주에서도 관련 기사를 자주 놓쳤다(2026-11 BRK·MSFT가 "특이사항 없음"으로 나옴).
 - 한국 주식:
   1. Tavily 외신. 쿼리는 `KR_GLOBAL_QUERY_MAP`(없으면 yfinance shortName), 대상은 `TRUSTED_DOMAINS_US`.
   2. Naver News API와 Google News RSS를 **둘 다** 수집한다(한국어 쿼리 = 종목명). 둘 다 비면 Tavily(`TRUSTED_DOMAINS_KR`)로 폴백.
