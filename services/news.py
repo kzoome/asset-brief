@@ -481,7 +481,7 @@ def get_asset_news(ticker: str, name: str, etf_queries: dict | None = None) -> s
             title_kw = rss_query.lower()
         print(f"   👉 Query: {query}")
 
-        results = _search_tavily(query, TRUSTED_DOMAINS_US, max_results=5)
+        results_tavily = _search_tavily(query, TRUSTED_DOMAINS_US, max_results=5)
 
         # 영어판 Google News RSS는 항상 함께 수집 (Tavily만으로는 관련 기사를 자주 놓침)
         results_rss = fetch_google_news(rss_query, max_results=5, days=1, lang="en")
@@ -489,7 +489,9 @@ def get_asset_news(ticker: str, name: str, etf_queries: dict | None = None) -> s
             results_rss = [r for r in results_rss if title_kw in r["title"].lower()]
         if results_rss:
             print(f"   ✅ Google News RSS(en) 수집 완료 ({len(results_rss)}건, Query: {rss_query})")
-            results.extend(results_rss)
+
+        # 제목 필터를 거친 RSS를 무관한 기사가 섞이기 쉬운 Tavily보다 앞에 둔다
+        results = results_rss + results_tavily
 
         for idx, result in enumerate(results):
             news_text += f"\n--- 기사 {idx+1} ---\n"

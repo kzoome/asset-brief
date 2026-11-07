@@ -55,7 +55,7 @@ python test_global_insight.py   # ⚠️ 현재 동작 안 함 (아래 "미사�
 4. **종목별 처리** (종목마다 순차 실행):
    - ETF면 `extract_etf_queries()`로 테마 검색어 생성
    - `get_asset_news()`로 뉴스 수집
-   - 국내 비ETF 종목은 DART 최근 2일 공시를 뉴스 뒤에 붙임
+   - 국내 비ETF 종목은 DART 최근 2일 공시를 뉴스 **앞에** 붙임
    - `summarize_news_short()`로 핵심 사실 1문장 생성
    - 종목 단위 예외는 잡아서 요약 없이 종목 줄만 출력
 5. **메시지 조립·전송**: 헤더 + 시장 지표 + 종목 줄들을 4096자 기준으로 나눠 텔레그램 전송.
@@ -94,7 +94,11 @@ python test_global_insight.py   # ⚠️ 현재 동작 안 함 (아래 "미사�
 - 한국 주식:
   1. Tavily 외신. 쿼리는 `KR_GLOBAL_QUERY_MAP`(없으면 yfinance shortName), 대상은 `TRUSTED_DOMAINS_US`.
   2. Naver News API와 Google News RSS를 **둘 다** 수집한다(한국어 쿼리 = 종목명). 둘 다 비면 Tavily(`TRUSTED_DOMAINS_KR`)로 폴백.
-  3. 비ETF는 `main.py`에서 DART 공시를 추가한다.
+  3. 비ETF는 `main.py`에서 DART 공시를 뉴스 앞에 추가한다.
+- **Gemini에 넘기는 순서는 정확도 높은 소스가 먼저다.** 소스 안의 정렬은 각 소스 기준을 따른다.
+  - 미국: Yahoo → Google RSS → Tavily
+  - 한국: DART 공시 → Yahoo → Tavily 외신 → 네이버 → Google RSS
+  - 모델의 위치 편향 가능성 때문에 정한 순서다. 실제 영향을 측정하지는 않았다.
 - Tavily는 basic 검색(1크레딧/건)이다. 종목당 미국 1회, 한국 1~2회.
 
 **날짜 필터링**

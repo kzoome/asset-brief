@@ -88,7 +88,8 @@ async def main(market: str = "all", session: str = "auto"):
             if is_kr and not etf_q:
                 dart_data = get_recent_disclosures(ticker, days=2)
                 if dart_data:
-                    news_data += "\n\n" + dart_data
+                    # 회사가 직접 낸 공시가 가장 확실한 정보라 뉴스보다 앞에 둔다
+                    news_data = dart_data + "\n\n" + news_data
             short_summary = await summarize_news_short(ticker, name, news_data,
                                                        change_1d, kst_now.strftime('%Y-%m-%d'))
             scan_entries.append((name, ticker, weight, change_1d, price, currency, short_summary))
