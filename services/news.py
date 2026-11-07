@@ -247,7 +247,7 @@ def _search_tavily(query: str, include_domains: list, max_results: int = 5,
         # 3. 시세 페이지 제목 필터
         filtered = [
             r for r in filtered
-            if not any(pat in r.get("title", "") for pat in EXCLUDE_TITLE_PATTERNS)
+            if not any(pat in r.get("title", "").lower() for pat in EXCLUDE_TITLE_PATTERNS)
         ]
         # 4. 중복 제거
         seen = set()
