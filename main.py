@@ -89,7 +89,8 @@ async def main(market: str = "all", session: str = "auto"):
                 dart_data = get_recent_disclosures(ticker, days=2)
                 if dart_data:
                     news_data += "\n\n" + dart_data
-            short_summary = await summarize_news_short(ticker, name, news_data)
+            short_summary = await summarize_news_short(ticker, name, news_data,
+                                                       change_1d, kst_now.strftime('%Y-%m-%d'))
             scan_entries.append((name, ticker, weight, change_1d, price, currency, short_summary))
 
         except Exception as e:

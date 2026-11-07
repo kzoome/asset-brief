@@ -131,6 +131,8 @@ def _get_yfinance_news(ticker: str, max_items: int = 5, days: int = 2) -> str:
 
             news_text += f"\n--- [Yahoo Finance] 기사 {count+1} ---\n"
             news_text += f"Title: {title}\n"
+            if pub_date_str:
+                news_text += f"Date: {pub_date_str}\n"
             if link:
                 news_text += f"{publisher} {link}\n"
             else:
@@ -422,6 +424,8 @@ def get_asset_news(ticker: str, name: str, etf_queries: dict | None = None) -> s
             news_text += f"\n--- [Global/English] 기사 {idx+1} ---\n"
             news_text += f"Title: {result['title']}\n"
             news_text += f"Content: {result['content']}\n"
+            if result.get('published_date'):
+                news_text += f"Date: {result['published_date']}\n"
             if result.get('url'):
                 news_text += f"Source: {result['url']}\n"
 
@@ -451,6 +455,8 @@ def get_asset_news(ticker: str, name: str, etf_queries: dict | None = None) -> s
             news_text += f"\n--- [Local/Korean] 기사 {idx+1} ---\n"
             news_text += f"제목: {result['title']}\n"
             news_text += f"내용: {result['content']}\n"
+            if result.get('published_date'):
+                news_text += f"Date: {result['published_date']}\n"
             if result.get('url'):
                 news_text += f"Source: {result['url']}\n"
 
@@ -479,6 +485,8 @@ def get_asset_news(ticker: str, name: str, etf_queries: dict | None = None) -> s
             news_text += f"\n--- 기사 {idx+1} ---\n"
             news_text += f"Title: {result['title']}\n"
             news_text += f"Content: {result['content']}\n"
+            if result.get('published_date'):
+                news_text += f"Date: {result['published_date']}\n"
             if result.get('url'):
                 news_text += f"Source: {result['url']}\n"
 

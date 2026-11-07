@@ -77,9 +77,11 @@ async def summarize_news(ticker: str, name: str, news_data: str) -> str:
         return f"⚠️ Gemini 생성 오류: {e}"
 
 
-async def summarize_news_short(ticker: str, name: str, news_data: str) -> str:
-    """뉴스에서 핵심 사실 1문장을 빠르게 추출합니다. (MID 티어 스캔뷰용)
-    gemini-2.5-flash 재시도 소진 시 gemini-2.0-flash로 폴백합니다.
+async def summarize_news_short(ticker: str, name: str, news_data: str,
+                               change_1d: float, today: str) -> str:
+    """뉴스에서 핵심 사실 1문장을 빠르게 추출합니다.
+    오늘 날짜와 실제 1D 등락률을 함께 넘겨 지난 기사 속 등락을 오늘 일로 쓰지 않게 합니다.
+    gemini-3.5-flash-lite 재시도 소진 시 gemini-3.1-flash-lite로 폴백합니다.
     """
     gemini_client = get_gemini_client()
     if not gemini_client:
@@ -89,12 +91,16 @@ async def summarize_news_short(ticker: str, name: str, news_data: str) -> str:
     short_prompt_key = f"{asset_type}_SHORT"
     system_instruction = SYSTEM_PROMPTS.get(short_prompt_key, SYSTEM_PROMPTS["US_STOCK_SHORT"])
 
-    for model in ('gemini-2.5-flash', 'gemini-2.5-flash-lite'):
+    for model in ('gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'):
         try:
             text = await _generate_with_retry(
                 gemini_client,
                 model=model,
-                contents=f"'{name}'({ticker}) 뉴스:\n{news_data}",
+                contents=(
+                    f"오늘(KST): {today}\n"
+                    f"'{name}'({ticker}) 최근 거래일 등락률: {change_1d:+.1f}% (참고용, 요약에 쓰지 말 것)\n"
+                    f"뉴스:\n{news_data}"
+                ),
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction,
                     temperature=0.1
@@ -105,8 +111,8 @@ async def summarize_news_short(ticker: str, name: str, news_data: str) -> str:
                 text = text[1:].strip()
             return text
         except Exception as e:
-            if model == 'gemini-2.5-flash':
-                print(f"⚠️ [{ticker}] gemini-2.5-flash 실패, gemini-2.5-flash-lite로 폴백... ({e})")
+            if model == 'gemini-3.5-flash-lite':
+                print(f"⚠️ [{ticker}] gemini-3.5-flash-lite 실패, gemini-3.1-flash-lite로 폴백... ({e})")
             else:
                 print(f"⚠️ [{ticker}] 단문 요약 최종 실패: {e}")
     return ""
@@ -179,7 +185,7 @@ async def extract_etf_queries(ticker: str, name: str, is_kr: bool) -> dict:
         import json, re
         text = await _generate_with_retry(
             gemini_client,
-            model='gemini-2.5-flash',
+            model='gemini-3.5-flash-lite',
             contents=prompt,
             config=types.GenerateContentConfig(temperature=0.1),
         )
